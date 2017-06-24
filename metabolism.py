@@ -6,53 +6,6 @@ from bokeh.plotting import figure, curdoc, output_file
 from bokeh.models import Slider, Select, RadioButtonGroup, HoverTool
 from bokeh.io import output_file, show
 
-controls =  None
-x_options = ['Height', 'Weight', 'Age']
-# 1 choose x axis parameter
-# 2 choose values for other two parameters
-
-# starting values
-
-# eq_value
-# units_value
-# age_value
-# height_value
-# weight_value
-# sex_value
-# bf_value
-
-    # # get x axis variable
-    # xs = parameters[x.value]
-    # x_axis_label = x.value
-
-    # # get values for other two variables
-    # for option in x_options:
-    #     # one of these won't work
-    #     # if option is not x.value:
-    #     age = slider_age.value
-    #     height = slider_height.value
-    #     sex = button_sex.active != 1
-    #     equation = button_equation.active
-
-# height = 200 # cm
-# age = 40 
-# sex = namedtuple()
-# equation = mifflin
-
-# 4ft up to 9ft
-MIN_HEIGHT = 122
-MAX_HEIGHT = 272
-HEIGHTS = list(range(MIN_HEIGHT, MAX_HEIGHT))
-
-# range from study
-MIN_AGE = 19
-MAX_AGE = 78
-AGES = list(range(MIN_AGE, MAX_AGE))
-
-# validate not below normal BMI
-WEIGHTS = list(range(35, 200))
-
-parameters = {'Height': HEIGHTS, 'Age': AGES, 'Weight': WEIGHTS}
 
 # -----------------------------------------------------------------------------
 # Metabolic Equations for Resting Metabolic Rate
@@ -121,11 +74,9 @@ T = namedtuple('equation_tuple',['Name', 'Equation', 'Standard_Error',
     'Parameters', 'Description', 'References', 'Age_Range', 'Weight_Range', 
     'Height_Range', 'Bodyfat_Range'])
 
-
 # not sure if this works w/ multiple lines
 # T = namedtuple('equation_tuple','Name Equation Standard_Error Parameters Description', 
 #     'References Age_Range Weight_Range Height_Range')
-
 
 mifflin_T = T(
     Name = "Mifflin",
@@ -146,7 +97,7 @@ harris_benedict_T = T(
     Standard_Error = (0.1),
     Parameters = ['weight', 'age', 'height', 'sex'],
     Description = None,
-    References= None,
+    References = None,
     Age_Range = (18,80),
     Weight_Range = None,
     Height_Range = (122,272),
@@ -172,7 +123,7 @@ schofield_T = T(
     Standard_Error = (0.1),
     Parameters = ['weight', 'age'],
     Description = 'WHO',
-    References= None,
+    References = None,
     Age_Range = (3,80),
     Weight_Range = None,
     Height_Range = (122,272),
@@ -198,13 +149,14 @@ def underweight(bmi):
 # -----------------------------------------------------------------------------
 # Configure Widgets
 
-# x axis
+
 def select_x_axis(equation_tuple):
     options = [v for v in equation_tuple.Parameters if v is not 'sex']
     picker_x_axis = Select(title='X-Axis', value=0, 
         options=options)
     picker_x_axis.on_change('value', update)
     return picker_x_axis
+
 
 def get_min_max(value, equation_tuple):
 
@@ -231,6 +183,7 @@ def get_min_max(value, equation_tuple):
 
     return [x_min, x_max]
 
+# Yaargh widgets NOT IN SCOPE!
 def get_current_value(value): # units!
     if value is 'weight':
         return slider_weight.value
@@ -329,6 +282,15 @@ def create_figure():
     x_axis_picker = select_x_axis(equation_tuple)
     widgets.append(x_axis_picker)
 
+    additonal_parameters = [
+        p for p in equation.Parameters 
+        if equation.Parameters.index(p) is not x_axis_picker.value
+        ]
+
+    # Widgets are based on units, equation, and x axis selected
+    update_widgets(units, equation_tuple, additional_parameters) 
+    controls = widgetbox(widgets, width=200)
+
     # Translate from indices to named value
     x_parameter = equation_tuple.Parameters[x_axis_picker.value]
     x_min, x_max = get_min_max(x_parameter, equation_tuple)
@@ -358,17 +320,6 @@ def create_figure():
     # set units, ranges on widgets
     # set info, ref, desc
     # set ranges for parameters
-    additonal_parameters = [
-        p for p in equation.Parameters 
-        if equation.Parameters.index(p) is not x_axis_picker.value
-        ]
-
-    update_widgets(units, equation_tuple, additional_parameters)
- 
-    controls = widgetbox(widgets, width=200)
-
-
-    # Layout / Output
 
     layout = row(controls, p)
     curdoc().add_root(layout)
