@@ -6,7 +6,7 @@ from bokeh.plotting import figure, curdoc, output_file
 from bokeh.models import Slider, Select, RadioButtonGroup, HoverTool
 from bokeh.io import output_file, show
 
-
+controls =  None
 x_options = ['Height', 'Weight', 'Age']
 # 1 choose x axis parameter
 # 2 choose values for other two parameters
@@ -71,9 +71,9 @@ def harris_benedict(weight=None, height=None, age=None, sex=None):
     sex (male = 1, female = 0)
     """
     if sex is 1:
-        return 66.5 + 13.75 * weight + 5.003 * height – 6.755 × age
+        return 66.5 + 13.75 * weight + 5.003 * height - 6.755 * age
     if sex is 0:
-        return 655.1 + 9.563 * weight + 1.850 * height – 4.676 * age
+        return 655.1 + 9.563 * weight + 1.850 * height - 4.676 * age
 
 def cunningham(weight=None, bf=None):
     """Resting metabolic rate in calories
@@ -91,90 +91,92 @@ def schofield(age=None, weight=None, sex=None):
     if sex is 1:
         if age >= 60:
             return 38 * weight + 2755
-        if age >= 30 && age < 60:
+        if age >= 30 and age < 60:
             return 34 * weight + 3538
-        if age >= 18 && age < 30:
+        if age >= 18 and age < 30:
             return 62 * weight + 2036
-        if age >= 10 && age < 18:
+        if age >= 10 and age < 18:
             return 244 * weight - 130
-        if age >= 3 && age < 10:
+        if age >= 3 and age < 10:
             85 * weight + 2033
 
     # Males
     if sex is 0:
         if age >= 60:
             return 49 * weight + 2459
-        if age >= 30 && age < 60:
+        if age >= 30 and age < 60:
             return 48 * weight + 3653
-        if age >= 18 && age < 30:
+        if age >= 18 and age < 30:
             return 63 * weight + 2896
-        if age >= 10 && age < 18:
+        if age >= 10 and age < 18:
             return 74 * weight + 2754
-        if age >= 3 && age < 10:
+        if age >= 3 and age < 10:
             return 95 * weight + 2110
 
 
 met_eq_functions = [mifflin, harris_benedict, cunningham, schofield]
-sex_values = [Male, Female]
+sex_values = ['Male', 'Female']
 
-T = namedtuple('equation_tuple',['Name', 'Label', 'Standard Error', 'Parameters', 
-    'Description', 'References', 'Age_Range', 'Weight_Range', 'Height_Range', 'Bodyfat_Range'])
+T = namedtuple('equation_tuple',['Name', 'Equation', 'Standard_Error', 
+    'Parameters', 'Description', 'References', 'Age_Range', 'Weight_Range', 
+    'Height_Range', 'Bodyfat_Range'])
+
 
 # not sure if this works w/ multiple lines
-# equation_T = namedtuple('Name Label Standard_Error Parameters Description', 
-    # 'References Age_Range Weight_Range Height_Range')
+# T = namedtuple('equation_tuple','Name Equation Standard_Error Parameters Description', 
+#     'References Age_Range Weight_Range Height_Range')
 
 
 mifflin_T = T(
-    'Name' = "Mifflin"
-    'Equation' = mifflin
-    'Standard Error' = (0.1)
-    'Parameters' = ['weight', 'age', 'height', 'sex']
-    'parameters_D' = {'weight':weight_value, 'age':age_value, 'height':height_value, 'sex':sex_value}
-    'References'= None
-    'Age_Range' = (18,80)
-    'Weight_Range' = (30, 200)
-    'Height_Range' = (122,272)
-    'Bodyfat_Range' = None
+    Name = "Mifflin",
+    Equation = mifflin,
+    Standard_Error = (0.1),
+    Parameters = ['weight', 'age', 'height', 'sex'],
+    Description = None,
+    References= None,
+    Age_Range = (18,80),
+    Weight_Range = (30, 200),
+    Height_Range = (122,272),
+    Bodyfat_Range = None
     )
 
 harris_benedict_T = T(
-    'Name' = "Harris Benedict"
-    'Equation' = harris_benedict
-    'Standard Error' = (0.1)
-    'Parameters' = ['weight', 'age', 'height', 'sex']
-    'Description' = 'Standard Error'
-    'References'= None
-    'Age_Range' = (18,80)
-    'Weight_Range' = None
-    'Height_Range' = (122,272)
-    'Bodyfat_Range' = None
-    )
+    Name = "Harris Benedict",
+    Equation = harris_benedict,
+    Standard_Error = (0.1),
+    Parameters = ['weight', 'age', 'height', 'sex'],
+    Description = None,
+    References= None,
+    Age_Range = (18,80),
+    Weight_Range = None,
+    Height_Range = (122,272),
+    Bodyfat_Range = None
+    ) 
 
 cunningham_T = T(
-    'Name' = "Cunningham"
-    'Equation' = cunningham
-    'Standard Error' = (0.1)
-    'Parameters' = ['weight', 'bodyfat']
-    'Description' = 'For bodybuilders with low percent bodyfat.'
-    'References'= None
-    'Age_Range' = (18,80)
-    'Weight_Range' = None
-    'Height_Range' = (122,272)
-    'Bodyfat_Range' = (4,25)
+    Name = "Cunningham",
+    Equation = cunningham,
+    Standard_Error = (0.1),
+    Parameters = ['weight', 'bodyfat'],
+    Description = 'For bodybuilders with low percent bodyfat.',
+    References= None,
+    Age_Range = (18,80),
+    Weight_Range = None,
+    Height_Range = (122,272),
+    Bodyfat_Range = (4,25)
     )
 
 schofield_T = T(
-    'Name' = "Schofield"
-    'Equation' = schofield
-    'Standard Error' = (0.1)
-    'Parameters' = ['weight', 'age']
-    'Description' = 'WHO'
-    'References'= None
-    'Age_Range' = (3,80)
-    'Weight_Range' = None
-    'Height_Range' = (122,272)
-    'Bodyfat_Range' = None
+    Name = "Schofield",
+    Equation = schofield,
+    Standard_Error = (0.1),
+    Parameters = ['weight', 'age'],
+    Description = 'WHO',
+    References= None,
+    Age_Range = (3,80),
+    Weight_Range = None,
+    Height_Range = (122,272),
+    Bodyfat_Range = None
     )
 
 # also include error, age range, weight range?, height range? in tuple?
@@ -308,6 +310,10 @@ def update_widgets(units, equation_tuple, parameters):
 def create_figure():
 
     # bokeh plot
+    hover = HoverTool(tooltips = [
+        ("x, y", "xs, ys")
+        ])
+
     p = figure(plot_height=600, plot_width=600, tools=[hover])
 
     # Widgets
@@ -352,61 +358,26 @@ def create_figure():
     # set units, ranges on widgets
     # set info, ref, desc
     # set ranges for parameters
-    additonal_parameters = 
-        [p for p in equation.Parameters 
-        if equation.Parameters.index(p) is not x_axis_picker.value]
+    additonal_parameters = [
+        p for p in equation.Parameters 
+        if equation.Parameters.index(p) is not x_axis_picker.value
+        ]
 
     update_widgets(units, equation_tuple, additional_parameters)
-
+ 
     controls = widgetbox(widgets, width=200)
-    # associate equation name with correct equation tuple
-    
-    # Plot Lines
-    # p = figure(plot_height=600, plot_width=600, tools=[hover])
-    # p.line(xs, ys, line_width=2)
-
-    # Get user values for additonal_parameters, and put in dictionary
-
-    # get values for arguments
-    # apply partials
-    # put in x range
-    # get out y range result
 
 
-    # set x axis widget to None/Gray/remove from widgetbox
+    # Layout / Output
 
-    # partially apply to metabolism equation
-    # pass as dictionary defined above?
-    # met_eq_partial = partial(equation, sex=sex, height=height, age=age)
-
-    # use x axis range to get y axis values
-    # update line
-
-    # validate against normal BMI at minimum
-
-    # xs = sorted(set(WEIGHTS))
-    # ys = sorted(set([mifflin_partial(x) for x in WEIGHTS]))
-    
-    hover = HoverTool(tooltips = [
-        ("x, y", "xs, ys")
-    ])
-
-
-
+    layout = row(controls, p)
+    curdoc().add_root(layout)
+    show(p)
     return p
 
 def update(attr, old, new):
     layout.children[1] = create_figure()
 
-    # # Translate from indices to named values for buttons
-    # # units_value 
-     
-    # sex_value
-    # # Update to named values for buttons
-    # height_value
-    # weight_value
-    # bf_value
-    # age_value
 
 # Equation Widget
 # Other widgets will be set based on parameters, validated ranges for equation chosen.
@@ -428,9 +399,10 @@ button_units = RadioButtonGroup(labels=units_labels, active=0)
 button_units.on_change('active', update)
 widgets.append(button_units)
 
-# Layout / Output
+create_figure()
+# # Layout / Output
 
-layout = row(controls, create_figure())
-curdoc().add_root(layout)
+# layout = row(controls, create_figure())
+# curdoc().add_root(layout)
 
 
