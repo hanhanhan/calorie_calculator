@@ -6,184 +6,91 @@ from bokeh.plotting import figure, curdoc, output_file
 from bokeh.models import Slider, Select, RadioButtonGroup, HoverTool
 from bokeh.io import output_file, show
 
+from metabolic_equations import *
+
+# Things that should be linked:
+# parameter, widget, values (if by index)
+# eg sex, button_sex, ['male','female'] 
+
+
+# 1. set up all buttons, eq, x axis with default values
+# 2. update functions cascading eq -> units -> x-axis -> options
+# 3. 
 
 # -----------------------------------------------------------------------------
-# Metabolic Equations for Resting Metabolic Rate
+#
 
-def mifflin(weight=None, height=None, age=None, sex=None):
-    """Basal metabolic rate in calories
-    based on weight in kg, height in cm, and
-    sex (male = 1, female = 0)
-    """
-    return 9.99 * weight + 6.25 * height - 4.92 * age + 166 * sex - 161
+button_equation = RadioButtonGroup(labels=met_eq_labels, active=0)
+button_equation.on_change('active', update)
+widgets = []
+widgets.append(button_equation)
 
-# instead of partials?
-def harris_benedict(weight=None, height=None, age=None, sex=None):
-    """Resting metabolic rate in calories
-    based on weight in kg, height in cm, and
-    sex (male = 1, female = 0)
-    """
-    if sex is 1:
-        return 66.5 + 13.75 * weight + 5.003 * height - 6.755 * age
-    if sex is 0:
-        return 655.1 + 9.563 * weight + 1.850 * height - 4.676 * age
+# Units Widget
+# Units displayed for other widgets will be set based on this.
+units_labels = ["Imperial", "Metric"]
+button_units = RadioButtonGroup(labels=units_labels, active=0)
+button_units.on_change('active', update)
+widgets.append(button_units)
 
-def cunningham(weight=None, bf=None):
-    """Resting metabolic rate in calories
-    based on weight in kg and percent body fat
-    """
-    return (weight - weight * bf * 0.01) * 21.6 + 500
+create_figure()
 
-def schofield(age=None, weight=None, sex=None):
-    """Resting metabolic rate based on on weight in kg, age, and
-    sex (male = 1, female = 0)
-    """
-    # ugh update from kilojoules
-
-    # Females
-    if sex is 1:
-        if age >= 60:
-            return 38 * weight + 2755
-        if age >= 30 and age < 60:
-            return 34 * weight + 3538
-        if age >= 18 and age < 30:
-            return 62 * weight + 2036
-        if age >= 10 and age < 18:
-            return 244 * weight - 130
-        if age >= 3 and age < 10:
-            85 * weight + 2033
-
-    # Males
-    if sex is 0:
-        if age >= 60:
-            return 49 * weight + 2459
-        if age >= 30 and age < 60:
-            return 48 * weight + 3653
-        if age >= 18 and age < 30:
-            return 63 * weight + 2896
-        if age >= 10 and age < 18:
-            return 74 * weight + 2754
-        if age >= 3 and age < 10:
-            return 95 * weight + 2110
-
-
-met_eq_functions = [mifflin, harris_benedict, cunningham, schofield]
-sex_values = ['Male', 'Female']
-
-eq_T = namedtuple('equation_tuple',['Name', 'Equation', 'Standard_Error', 
-    'Parameters', 'Description', 'References', 'Age_Range', 'Weight_Range', 
-    'Height_Range', 'Bodyfat_Range'])
-
-# not sure if this works w/ multiple lines
-# T = namedtuple('equation_tuple','Name Equation Standard_Error Parameters Description', 
-#     'References Age_Range Weight_Range Height_Range')
-
-mifflin_T = eq_T(
-    Name = "Mifflin",
-    Equation = mifflin,
-    Standard_Error = (0.1),
-    Parameters = ['weight', 'age', 'height', 'sex'],
-    Description = None,
-    References= None,
-    Age_Range = (18,80),
-    Weight_Range = (30, 200),
-    Height_Range = (122,272),
-    Bodyfat_Range = None
-    )
-
-harris_benedict_T = eq_T(
-    Name = "Harris Benedict",
-    Equation = harris_benedict,
-    Standard_Error = (0.1),
-    Parameters = ['weight', 'age', 'height', 'sex'],
-    Description = None,
-    References = None,
-    Age_Range = (18,80),
-    Weight_Range = None,
-    Height_Range = (122,272),
-    Bodyfat_Range = None
-    ) 
-
-cunningham_T = eq_T(
-    Name = "Cunningham",
-    Equation = cunningham,
-    Standard_Error = (0.1),
-    Parameters = ['weight', 'bodyfat'],
-    Description = 'For bodybuilders with low percent bodyfat.',
-    References= None,
-    Age_Range = (18,80),
-    Weight_Range = None,
-    Height_Range = (122,272),
-    Bodyfat_Range = (4,25)
-    )
-
-schofield_T = eq_T(
-    Name = "Schofield",
-    Equation = schofield,
-    Standard_Error = (0.1),
-    Parameters = ['weight', 'age'],
-    Description = 'WHO',
-    References = None,
-    Age_Range = (3,80),
-    Weight_Range = None,
-    Height_Range = (122,272),
-    Bodyfat_Range = None
-    )
-
-# also include error, age range, weight range?, height range? in tuple?
 
 # -----------------------------------------------------------------------------
+# Initialize Widgets
 
-def cm_to_inches(cm):
-    return 0.3937 * cm
+# Equation Selection
 
-def kg_to_lb(kg):
-    return 2.20462 * kg
+# Units Selection
 
-def bmi(weight, height):
-    return weight / (0.01 * 0.01 * height * height)
+# X-Axis Selection
 
-def underweight(bmi):
-    return bmi < 19
+# Remaining Options
+
+
+
+
+
+
 
 # -----------------------------------------------------------------------------
 # Configure Widgets
 
-widget_T = namedtuple('widget_tuple', ['parameter', 'widget', 'index_v'])
 
 def select_x_axis(equation_tuple):
     options = [v for v in equation_tuple.Parameters if v is not 'sex']
     picker_x_axis = Select(title='X-Axis', value=0, 
         options=options)
     picker_x_axis.on_change('value', update)
-    
-    x_axis_T = widget_T(
-        parameter=x_axis,
-        widget=picker_x_axis,
-        index_v=options
-        )
-    
-    return x_axis_T
+    return picker_x_axis
 
 
 def get_min_max(value, equation_tuple):
 
     if value is 'weight':
-        return equation_tuple.Weight_Range
+        x_min = min(equation_tuple.Weight_Range)
+        x_max = max(equation_tuple.Weight_Range)
+        # return equation_tuple.Weight_Range
         
     elif value is 'age':
-        return equation_tuple.Age_Range
+        x_min = min(equation_tuple.Age_Range)
+        x_max = max(equation_tuple.Age_Range)
+        # return equation_tuple.Age_Range
 
     elif value is 'height':
-        return equation_tuple.Height_Range
+        x_min = min(equation_tuple.Height_Range)
+        x_max = max(equation_tuple.Height_Range)
+        # return equation_tuple.Height_Range
 
     # else? i'd prefer as a check
     else: #  x_axis is 'bodyfat'
-        return equation_tuple.Bodyfat_Range
+        x_min = min(equation_tuple.Bodyfat_Range)
+        x_max = max(equation_tuple.Bodyfat_Range)
+        # return equation_tuple.Bodyfat_Range
 
+    return [x_min, x_max]
 
 # Yaargh widgets NOT IN SCOPE!
-def get_current_value(value, widget_T): # units!
+def get_current_value(value): # units!
     if value is 'weight':
         return slider_weight.value
         
@@ -299,7 +206,7 @@ def create_figure():
     
     arguments_D = {}
     for k in additonal_parameters:
-        arguments_D[k] = get_current_value(k, )
+        arguments_D[k] = get_current_value(k)
 
     met_eq_partial = partial(equation_tuple.Equation(), arguments_D)
 
@@ -332,26 +239,7 @@ def update(attr, old, new):
 # Equation Widget
 # Other widgets will be set based on parameters, validated ranges for equation chosen.
 
-met_eq_labels = ["Mifflin St Jeor", "Harris Benedict", "Cunningham", "Schofield"]
-# met_eq_functions = [mifflin, harris_benedict, cunningham, schofield]
 
-met_eq_tuples = [mifflin_T, harris_benedict_T, cunningham_T, schofield_T]
-
-sex_values = [ "Male", "Female"]
-
-button_equation = RadioButtonGroup(labels=met_eq_labels, active=0)
-button_equation.on_change('active', update)
-widgets = []
-widgets.append(button_equation)
-
-# Units Widget
-# Units displayed for other widgets will be set based on this.
-units_labels = ["Imperial", "Metric"]
-button_units = RadioButtonGroup(labels=units_labels, active=0)
-button_units.on_change('active', update)
-widgets.append(button_units)
-
-create_figure()
 # # Layout / Output
 
 # layout = row(controls, create_figure())
