@@ -66,6 +66,44 @@ def setup_equation():
 
     return partial(equation, arguments)
 
+
+# -----------------------------------------------------------------------------
+
+
+def create_figure():
+
+    # bokeh plot
+    hover = HoverTool(tooltips = [
+        ("x, y", "xs, ys")
+        ])
+
+    p = figure(plot_height=600, plot_width=600, tools=[hover])
+
+    # UI Widgets
+    shown_widgets = get_shown_widgets()
+    controls = widgetbox(shown_widgets, width=200)
+
+    # Set up equation, x and y values based on UI values
+    eq_partial = setup_equation()
+    x_start, x_stop = widgets['xaxis'].start, widgets['xaxis'].stop
+    x = list(range(x_start,x_stop))
+    y = [eq_partial(x_i) for x_i in x]
+
+    p.line(x, y, line_width=2)
+    # improve to version from equation_tuple.title
+    p.xaxis.axis_label = "Placeholder"
+    p.yaxis.axis_label = "Calories per Day RMR"
+    p.title = "this should be a long title"
+
+    layout = row(controls, p)
+    curdoc().add_root(layout)
+    show(p)
+    return p
+
+def update(attr, old, new):
+    layout.children[1] = create_figure()
+
+
 # -----------------------------------------------------------------------------
 # Initialize Widgets
 
@@ -143,63 +181,5 @@ else:
 
 value = (start + end)/2
 button = Slider(start=start, end=end, value=value, step=1, title=title)
-
-
-
-
-# -----------------------------------------------------------------------------
-
-
-def create_figure():
-
-    # bokeh plot
-    hover = HoverTool(tooltips = [
-        ("x, y", "xs, ys")
-        ])
-
-    p = figure(plot_height=600, plot_width=600, tools=[hover])
-
-    # UI Widgets
-    shown_widgets = get_shown_widgets()
-    controls = widgetbox(shown_widgets, width=200)
-
-    # Set up equation, x and y values based on UI values
-    eq_partial = setup_equation()
-    x_start, x_stop = widgets['xaxis'].start, widgets['xaxis'].stop
-    x = list(range(x_start,x_stop))
-    y = [eq_partial(x_i) for x_i in x]
-
-    p.line(x, y, line_width=2)
-    # improve to version from equation_tuple.title
-    p.xaxis.axis_label = "Placeholder"
-    p.yaxis.axis_label = "Calories per Day RMR"
-    p.title = "this should be a long title"
-    # Determine units
-    # units = units_labels[button_units.value]
-
-    # Create widgets for remaining equation parameters
-    # based on equation selected:
-    # set widget boxes visible for remaining parameters
-    # set units, ranges on widgets
-    # set info, ref, desc
-    # set ranges for parameters
-
-    layout = row(controls, p)
-    curdoc().add_root(layout)
-    show(p)
-    return p
-
-def update(attr, old, new):
-    layout.children[1] = create_figure()
-
-
-# Equation Widget
-# Other widgets will be set based on parameters, validated ranges for equation chosen.
-
-
-# # Layout / Output
-
-# layout = row(controls, create_figure())
-# curdoc().add_root(layout)
 
 
