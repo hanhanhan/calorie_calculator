@@ -22,14 +22,20 @@ from metabolic_equations import *
 def get_widget_value(widget):
     """Return the named value from a widget button or toggle widget.
     """
-    index = widgets[widget].value
-    return widget.labels[index]
+    w = widgets[widget]
+
+    if type(w) is RadioButtonGroup:
+        index = widgets[widget].active
+        return w.labels[index]
+
+    if type(w) is Select or Slider:
+        return w.value
 
 
 def get_eq_parameters():
     """ Return all equation parameters from equation name.
     """
-    equation = get_widget_value(widgets['equation'])
+    equation = get_widget_value('equation')
     eq_tup = eq_tup_D[equation]
     return eq_tup.Parameters
 
@@ -39,33 +45,52 @@ def get_shown_widgets():
     selections.
     """
     parameters = get_eq_parameters()
-    already_selected = get_widget_value(widgets['xaxis'])
-    options = [widget[o] for o in parameters if o is not already_selected]
+    already_selected = get_widget_value('xaxis')
+    options = [widgets[o] for o in parameters if o is not already_selected]
 
-    shown_widgets = widgets['equation'] + widgets['xaxis'] + options
+    shown_widgets = []
+    shown_widgets.append(widgets['equation'])
+    shown_widgets.append(widgets['xaxis'])
+    shown_widgets += options
     
     return shown_widgets
 
-def setup_equation():
-    """ 
-    """
+
+def get_eq_tup():
     # Selected equation
     equation_name = get_widget_value('equation')
 
     # Look up equation info tuple based on equation name
-    eq_T = eq_tup_D[equation_name]
+    return eq_tup_D[equation_name]
+
+
+def setup_equation():
+    """ 
+    """
+    eq_T = get_eq_tup()
     equation = eq_T.Equation 
 
     parameters = get_eq_parameters()
     already_selected = get_widget_value('xaxis')
 
-    keywords = [k for k in parameters if k is not 'xaxis']
-    values = [get_widget_value(v) for v in parameters if v is not already_selected]
-    
+    keywords = [k for k in parameters if k is not already_selected]
+    values = [get_widget_value(k) for k in keywords]
+
     arguments = dict(zip(keywords, values))
 
-    return partial(equation, arguments)
+    partial_eq = partial(equation, **arguments)
 
+    return partial_eq
+
+
+def lookup_range():
+    """ Return the equation's validated range (min, max) 
+    for the x-axis parameter chosen.
+    """
+
+    # Placeholder. Consider units.
+
+    return (30,300)
 
 # -----------------------------------------------------------------------------
 
@@ -85,7 +110,12 @@ def create_figure():
 
     # Set up equation, x and y values based on UI values
     eq_partial = setup_equation()
-    x_start, x_stop = widgets['xaxis'].start, widgets['xaxis'].stop
+    eq_T = get_eq_tup()
+
+    values = ['weight', 'age', 'height']
+    ranges = ['Weight_Range', 'Age_Range', 'Height_Range']
+
+    x_start, x_stop = lookup_range()
     x = list(range(x_start,x_stop))
     y = [eq_partial(x_i) for x_i in x]
 
@@ -93,11 +123,11 @@ def create_figure():
     # improve to version from equation_tuple.title
     p.xaxis.axis_label = "Placeholder"
     p.yaxis.axis_label = "Calories per Day RMR"
-    p.title = "this should be a long title"
+    p.title.text = "this should be a long title"
 
     layout = row(controls, p)
     curdoc().add_root(layout)
-    show(p)
+    # show(p)
     return p
 
 def update(attr, old, new):
@@ -116,7 +146,7 @@ labels = [eq.Name for eq in met_eq_tuples]
 button = RadioButtonGroup(labels=labels, active=0)
 button.on_change('active', update)
 widgets['equation'] = button
-eq_tup = eq_tup_D[equation]
+eq_tup = eq_tup_D[labels[0]]
 
 
 # Units Selection
@@ -132,7 +162,7 @@ widgets['units'] = button
 parameters = get_eq_parameters()
 
 labels = [o for o in parameters if o is not 'sex']
-button = Select(title="X-Axis", labels=labels, value=0)
+button = RadioButtonGroup(labels=labels, active=0)
 button.on_change('active', update)
 widgets['xaxis'] = button
 
@@ -144,18 +174,19 @@ widgets['sex'] = button
 
 
 # Age
-start, stop = eq_tup.Age_Range
-button = Slider(start=start, end=end, value=start, step=1, title="Age")
+start, end = eq_tup.Age_Range
+button = Slider(start=start, end=end, value=start, title="Age")
 widgets['age'] = button
 
 
 # Bodyfat
-start, stop = cunningham_T.Bodyfat_Range
+start, end = cunningham_T.Bodyfat_Range
 button = Slider(start=start,end=end,value=start,step=1,title="% Bodyfat")
+widgets['bodyfat'] = button
 
 
 # Height
-start, stop = eq_tup.Height_Range
+start, end = eq_tup.Height_Range
 
 if get_widget_value('units') is 'Imperial':
     start = cm_to_inches(start)
@@ -166,6 +197,7 @@ else:
 
 value = (start + end)/2
 button = Slider(start=start, end=end, value=value, step=1, title=title)
+widgets['height'] = button
 
 
 # Weight
@@ -181,5 +213,9 @@ else:
 
 value = (start + end)/2
 button = Slider(start=start, end=end, value=value, step=1, title=title)
+widgets['weight'] = button
 
 
+# -----------------------------------------------------
+# Initial call
+create_figure()

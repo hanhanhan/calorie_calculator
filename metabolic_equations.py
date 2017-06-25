@@ -8,17 +8,22 @@ def mifflin(weight=None, height=None, age=None, sex=None):
     based on weight in kg, height in cm, and
     sex (male = 1, female = 0)
     """
+    if sex is 'Male':
+        sex = 1
+    else:
+        sex = 0
+
     return 9.99 * weight + 6.25 * height - 4.92 * age + 166 * sex - 161
 
 
 def harris_benedict(weight=None, height=None, age=None, sex=None):
     """Resting metabolic rate in calories
     based on weight in kg, height in cm, and
-    sex (male = 1, female = 0)
+    sex.
     """
-    if sex is 1:
+    if sex is 'Male':
         return 66.5 + 13.75 * weight + 5.003 * height - 6.755 * age
-    if sex is 0:
+    else: 
         return 655.1 + 9.563 * weight + 1.850 * height - 4.676 * age
 
 
@@ -36,7 +41,7 @@ def schofield(age=None, weight=None, sex=None):
     # ugh update from kilojoules
 
     # Females
-    if sex is 1:
+    if sex is 'Female':
         if age >= 60:
             return 38 * weight + 2755
         if age >= 30 and age < 60:
@@ -49,7 +54,7 @@ def schofield(age=None, weight=None, sex=None):
             85 * weight + 2033
 
     # Males
-    if sex is 0:
+    else: 
         if age >= 60:
             return 49 * weight + 2459
         if age >= 30 and age < 60:
@@ -125,10 +130,14 @@ schofield_T = T(
 
 # also include error, age range, weight range?, height range? in tuple?
 
-met_eq_functions = ['mifflin', 'harris_benedict', 'cunningham', 'schofield']
+# met_eq_functions = ['mifflin', 'harris_benedict', 'cunningham', 'schofield']
+
 met_eq_tuples = [mifflin_T, harris_benedict_T, cunningham_T, schofield_T]
+met_eq_functions = [eq.Name for eq in met_eq_tuples]
 labels = [eq.Name for eq in met_eq_tuples]
 eq_tup_D = dict(zip(met_eq_functions, met_eq_tuples))
+
+
 sex_values = ['Male', 'Female']
 
 # -----------------------------------------------------------------------------
