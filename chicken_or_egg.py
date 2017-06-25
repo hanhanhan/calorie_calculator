@@ -175,13 +175,13 @@ widgets['sex'] = button
 
 # Age
 start, end = eq_tup.Age_Range
-button = Slider(start=start, end=end, value=start, title="Age")
+button = Slider(start=start, end=end, value=start, step=1, title="Age")
 widgets['age'] = button
 
 
 # Bodyfat
 start, end = cunningham_T.Bodyfat_Range
-button = Slider(start=start,end=end,value=start,step=1,title="% Bodyfat")
+button = Slider(start=start,end=end,value=start, step=1,title="% Bodyfat")
 widgets['bodyfat'] = button
 
 
@@ -191,11 +191,11 @@ start, end = eq_tup.Height_Range
 if get_widget_value('units') is 'Imperial':
     start = cm_to_inches(start)
     end = cm_to_inches(end)
-    title = "Weight (inches)"
+    title = "Height (inches)"
 else:
-    title = "Weight (cm)"
+    title = "Height (cm)"
 
-value = (start + end)/2
+value = round((start + end)/2)
 button = Slider(start=start, end=end, value=value, step=1, title=title)
 widgets['height'] = button
 

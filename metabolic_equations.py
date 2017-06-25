@@ -143,13 +143,13 @@ sex_values = ['Male', 'Female']
 # -----------------------------------------------------------------------------
 
 def cm_to_inches(cm):
-    return 0.3937 * cm
+    return round(0.3937 * cm)
 
 def kg_to_lb(kg):
-    return 2.20462 * kg
+    return round(2.20462 * kg)
 
 def bmi(weight, height):
-    return weight / (0.01 * 0.01 * height * height)
+    return round(weight / (0.01 * 0.01 * height * height))
 
 def underweight(bmi):
     return bmi < 19

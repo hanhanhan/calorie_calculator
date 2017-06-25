@@ -6,257 +6,93 @@ from bokeh.plotting import figure, curdoc, output_file
 from bokeh.models import Slider, Select, RadioButtonGroup, HoverTool
 from bokeh.io import output_file, show
 
+from metabolic_equations import *
+
+# Things that should be linked:
+# parameter, widget, values (if by index)
+# eg sex, button_sex, ['male','female'] 
+
+
+# 1. set up all buttons, eq, x axis with default values
+# 2. update functions cascading eq -> units -> x-axis -> options
+# 3. 
 
 # -----------------------------------------------------------------------------
-# Metabolic Equations for Resting Metabolic Rate
-
-def mifflin(weight=None, height=None, age=None, sex=None):
-    """Basal metabolic rate in calories
-    based on weight in kg, height in cm, and
-    sex (male = 1, female = 0)
+#
+def get_widget_value(widget):
+    """Return the named value from a widget button or toggle widget.
     """
-    return 9.99 * weight + 6.25 * height - 4.92 * age + 166 * sex - 161
+    w = widgets[widget]
 
-# instead of partials?
-def harris_benedict(weight=None, height=None, age=None, sex=None):
-    """Resting metabolic rate in calories
-    based on weight in kg, height in cm, and
-    sex (male = 1, female = 0)
+    if type(w) is RadioButtonGroup:
+        index = widgets[widget].active
+        return w.labels[index]
+
+    if type(w) is Select or Slider:
+        return w.value
+
+
+def get_eq_parameters():
+    """ Return all equation parameters from equation name.
     """
-    if sex is 1:
-        return 66.5 + 13.75 * weight + 5.003 * height - 6.755 * age
-    if sex is 0:
-        return 655.1 + 9.563 * weight + 1.850 * height - 4.676 * age
+    equation = get_widget_value('equation')
+    eq_tup = eq_tup_D[equation]
+    return eq_tup.Parameters
 
-def cunningham(weight=None, bf=None):
-    """Resting metabolic rate in calories
-    based on weight in kg and percent body fat
+
+def get_shown_widgets():
+    """ Return subset of widgets shown based on equation parameters and xaxis 
+    selections.
     """
-    return (weight - weight * bf * 0.01) * 21.6 + 500
+    parameters = get_eq_parameters()
+    already_selected = get_widget_value('xaxis')
+    options = [widgets[o] for o in parameters if o is not already_selected]
 
-def schofield(age=None, weight=None, sex=None):
-    """Resting metabolic rate based on on weight in kg, age, and
-    sex (male = 1, female = 0)
+    shown_widgets = []
+    shown_widgets.append(widgets['equation'])
+    shown_widgets.append(widgets['xaxis'])
+    shown_widgets += options
+    
+    return shown_widgets
+
+
+def get_eq_tup():
+    # Selected equation
+    equation_name = get_widget_value('equation')
+
+    # Look up equation info tuple based on equation name
+    return eq_tup_D[equation_name]
+
+
+def setup_equation():
+    """ 
     """
-    # ugh update from kilojoules
+    eq_T = get_eq_tup()
+    equation = eq_T.Equation 
 
-    # Females
-    if sex is 1:
-        if age >= 60:
-            return 38 * weight + 2755
-        if age >= 30 and age < 60:
-            return 34 * weight + 3538
-        if age >= 18 and age < 30:
-            return 62 * weight + 2036
-        if age >= 10 and age < 18:
-            return 244 * weight - 130
-        if age >= 3 and age < 10:
-            85 * weight + 2033
+    parameters = get_eq_parameters()
+    already_selected = get_widget_value('xaxis')
 
-    # Males
-    if sex is 0:
-        if age >= 60:
-            return 49 * weight + 2459
-        if age >= 30 and age < 60:
-            return 48 * weight + 3653
-        if age >= 18 and age < 30:
-            return 63 * weight + 2896
-        if age >= 10 and age < 18:
-            return 74 * weight + 2754
-        if age >= 3 and age < 10:
-            return 95 * weight + 2110
+    keywords = [k for k in parameters if k is not already_selected]
+    values = [get_widget_value(k) for k in keywords]
+
+    arguments = dict(zip(keywords, values))
+
+    partial_eq = partial(equation, **arguments)
+
+    return partial_eq
 
 
-met_eq_functions = [mifflin, harris_benedict, cunningham, schofield]
-sex_values = ['Male', 'Female']
+def lookup_range():
+    """ Return the equation's validated range (min, max) 
+    for the x-axis parameter chosen.
+    """
 
-eq_T = namedtuple('equation_tuple',['Name', 'Equation', 'Standard_Error', 
-    'Parameters', 'Description', 'References', 'Age_Range', 'Weight_Range', 
-    'Height_Range', 'Bodyfat_Range'])
+    # Placeholder. Consider units.
 
-# not sure if this works w/ multiple lines
-# T = namedtuple('equation_tuple','Name Equation Standard_Error Parameters Description', 
-#     'References Age_Range Weight_Range Height_Range')
-
-mifflin_T = eq_T(
-    Name = "Mifflin",
-    Equation = mifflin,
-    Standard_Error = (0.1),
-    Parameters = ['weight', 'age', 'height', 'sex'],
-    Description = None,
-    References= None,
-    Age_Range = (18,80),
-    Weight_Range = (30, 200),
-    Height_Range = (122,272),
-    Bodyfat_Range = None
-    )
-
-harris_benedict_T = eq_T(
-    Name = "Harris Benedict",
-    Equation = harris_benedict,
-    Standard_Error = (0.1),
-    Parameters = ['weight', 'age', 'height', 'sex'],
-    Description = None,
-    References = None,
-    Age_Range = (18,80),
-    Weight_Range = None,
-    Height_Range = (122,272),
-    Bodyfat_Range = None
-    ) 
-
-cunningham_T = eq_T(
-    Name = "Cunningham",
-    Equation = cunningham,
-    Standard_Error = (0.1),
-    Parameters = ['weight', 'bodyfat'],
-    Description = 'For bodybuilders with low percent bodyfat.',
-    References= None,
-    Age_Range = (18,80),
-    Weight_Range = None,
-    Height_Range = (122,272),
-    Bodyfat_Range = (4,25)
-    )
-
-schofield_T = eq_T(
-    Name = "Schofield",
-    Equation = schofield,
-    Standard_Error = (0.1),
-    Parameters = ['weight', 'age'],
-    Description = 'WHO',
-    References = None,
-    Age_Range = (3,80),
-    Weight_Range = None,
-    Height_Range = (122,272),
-    Bodyfat_Range = None
-    )
-
-# also include error, age range, weight range?, height range? in tuple?
+    return (30,300)
 
 # -----------------------------------------------------------------------------
-
-def cm_to_inches(cm):
-    return 0.3937 * cm
-
-def kg_to_lb(kg):
-    return 2.20462 * kg
-
-def bmi(weight, height):
-    return weight / (0.01 * 0.01 * height * height)
-
-def underweight(bmi):
-    return bmi < 19
-
-# -----------------------------------------------------------------------------
-# Configure Widgets
-
-widget_T = namedtuple('widget_tuple', ['parameter', 'widget', 'index_v'])
-
-def select_x_axis(equation_tuple):
-    options = [v for v in equation_tuple.Parameters if v is not 'sex']
-    picker_x_axis = Select(title='X-Axis', value=0, 
-        options=options)
-    picker_x_axis.on_change('value', update)
-    
-    x_axis_T = widget_T(
-        parameter=x_axis,
-        widget=picker_x_axis,
-        index_v=options
-        )
-    
-    return x_axis_T
-
-
-def get_min_max(value, equation_tuple):
-
-    if value is 'weight':
-        return equation_tuple.Weight_Range
-        
-    elif value is 'age':
-        return equation_tuple.Age_Range
-
-    elif value is 'height':
-        return equation_tuple.Height_Range
-
-    # else? i'd prefer as a check
-    else: #  x_axis is 'bodyfat'
-        return equation_tuple.Bodyfat_Range
-
-
-# Yaargh widgets NOT IN SCOPE!
-def get_current_value(value, widget_T): # units!
-    if value is 'weight':
-        return slider_weight.value
-        
-    if value is 'age':
-        return slider_age.value
-
-    if value is 'height':
-        return slider_height.value
-
-    if value is 'bodyfat':
-        return slider_bf.value
-
-    if value is 'sex':
-        return sex_values.index(button_sex.value)
-
-
-def update_widgets(units, equation_tuple, parameters):
-    """Change units displayed based on user selected units (imperial or metric),
-    and equation ranges of validity for age, weight, height.
-    """
-    # update to use ranges in tuples throughout
-
-    if 'age' in parameters:
-    # if equation_tuple.Age_Range and 'age' in parameters:
-        min_age, max_age = get_min_max('age', equation_tuple)
-
-        slider_age = Slider(start=min_age, end=max_age, value=min_age, step=1, title="Age")
-        slider_age.on_change('value', update)
-        widgets.append(slider_age)
-    
-    if 'height' in parameters:
-    # if equation_tuple.Height_Range and 'height' in parameters:
-        min_height, max_height = get_min_max('height', equation_tuple)
-        height_title = "Height (cm)"
-
-        if units is 'Imperial':
-            min_height = cm_to_inches(min_height)
-            max_height = cm_to_inches(max_height)
-            height_title = "Height (in)"
-
-        slider_height = Slider(start=min_height, end=max_height, value=min_height, step=1, title="Height")
-        slider_height.on_change('value', update)
-
-        widgets.append(slider_height)
-
-    # verify against bmi
-    if 'weight' in parameters:
-        min_weight = 20
-        max_weight = 200
-        weight_title = "Weight (kg)"
-
-        if units is 'Imperial':
-            min_weight = kg_to_lb(min_weight)
-            max_weight = kg_to_lb(max_weight)
-            weight_title = "Weight (lb)"
-
-        slider_weight = Slider(start=min_weight, end=max_weight, value=min_weight, step=1, title=weight_title)
-        slider_weight.on_change('value', update)
-
-    if 'sex' in parameters:
-        button_sex = RadioButtonGroup(labels=sex_values, active=1)
-        button_sex.on_change('active', update)
-
-        widgets.append(button_sex)
-
-    if 'bodyfat' in parameters:
-        min_bf = 5
-        # find out study validated range, prob not validated for higher body fat %s
-        max_bf = 20
-        slider_bf = Slider(start=min_bf, end=max_bf, value=min_bf, step=0.2, title="% Bodyfat")
-        slider_bf.on_change('active', update)
-
-        widgets.append(slider_bf)
 
 
 def create_figure():
@@ -268,93 +104,118 @@ def create_figure():
 
     p = figure(plot_height=600, plot_width=600, tools=[hover])
 
-    # Widgets
-    # widgets = [], append units + equation up here? global?
-    # make values 'sticky' between widget updates
-    # will need to separate out weight to make sure only plotting for min normal bmi
-    # verify % bodyfat ranges, other ranges
+    # UI Widgets
+    shown_widgets = get_shown_widgets()
+    controls = widgetbox(shown_widgets, width=200)
 
-    # Which metabolic equation is selected
-    equation_tuple = met_eq_tuples[button_equation.active]
+    # Set up equation, x and y values based on UI values
+    eq_partial = setup_equation()
+    eq_T = get_eq_tup()
 
-    # Set x-axis options based on metabolic equation parameters
-    x_axis_picker = select_x_axis(equation_tuple)
-    widgets.append(x_axis_picker)
+    values = ['weight', 'age', 'height']
+    ranges = ['Weight_Range', 'Age_Range', 'Height_Range']
 
-    additonal_parameters = [
-        p for p in equation.Parameters 
-        if equation.Parameters.index(p) is not x_axis_picker.value
-        ]
-
-    # Widgets are based on units, equation, and x axis selected
-    update_widgets(units, equation_tuple, additional_parameters) 
-    controls = widgetbox(widgets, width=200)
-
-    # Translate from indices to named value
-    x_parameter = equation_tuple.Parameters[x_axis_picker.value]
-    x_min, x_max = get_min_max(x_parameter, equation_tuple)
-    x = list(range(x_min, x_max))
-
-    # arguments_D = { k:v for k in additonal_parameters for v in get_current_value(k) }
-    
-    arguments_D = {}
-    for k in additonal_parameters:
-        arguments_D[k] = get_current_value(k, )
-
-    met_eq_partial = partial(equation_tuple.Equation(), arguments_D)
-
-    y = [met_eq_partial(x_i) for x_i in x]
+    x_start, x_stop = lookup_range()
+    x = list(range(x_start,x_stop))
+    y = [eq_partial(x_i) for x_i in x]
 
     p.line(x, y, line_width=2)
     # improve to version from equation_tuple.title
-    p.xaxis.axis_label = x_parameter
+    p.xaxis.axis_label = "Placeholder"
     p.yaxis.axis_label = "Calories per Day RMR"
-    p.title = "this should be a long title"
-    # Determine units
-    # units = units_labels[button_units.value]
-
-    # Create widgets for remaining equation parameters
-    # based on equation selected:
-    # set widget boxes visible for remaining parameters
-    # set units, ranges on widgets
-    # set info, ref, desc
-    # set ranges for parameters
+    p.title.text = "this should be a long title"
 
     layout = row(controls, p)
     curdoc().add_root(layout)
-    show(p)
+    # show(p)
     return p
 
 def update(attr, old, new):
     layout.children[1] = create_figure()
 
 
-# Equation Widget
-# Other widgets will be set based on parameters, validated ranges for equation chosen.
+# -----------------------------------------------------------------------------
+# Initialize Widgets
 
-met_eq_labels = ["Mifflin St Jeor", "Harris Benedict", "Cunningham", "Schofield"]
-# met_eq_functions = [mifflin, harris_benedict, cunningham, schofield]
+# Setup
+widgets = {}
 
-met_eq_tuples = [mifflin_T, harris_benedict_T, cunningham_T, schofield_T]
 
-sex_values = [ "Male", "Female"]
+# Equation Selection
+labels = [eq.Name for eq in met_eq_tuples]
+button = RadioButtonGroup(labels=labels, active=0)
+button.on_change('active', update)
+widgets['equation'] = button
+eq_tup = eq_tup_D[labels[0]]
 
-button_equation = RadioButtonGroup(labels=met_eq_labels, active=0)
-button_equation.on_change('active', update)
-widgets = []
-widgets.append(button_equation)
 
-# Units Widget
+# Units Selection
 # Units displayed for other widgets will be set based on this.
-units_labels = ["Imperial", "Metric"]
-button_units = RadioButtonGroup(labels=units_labels, active=0)
-button_units.on_change('active', update)
-widgets.append(button_units)
+labels = ["Imperial", "Metric"]
+button = RadioButtonGroup(labels=labels, active=0)
+button.on_change('active', update)
+widgets['units'] = button
 
+
+# X-Axis Selection
+# Selection is based on equation selected.
+parameters = get_eq_parameters()
+
+labels = [o for o in parameters if o is not 'sex']
+button = RadioButtonGroup(labels=labels, active=0)
+button.on_change('active', update)
+widgets['xaxis'] = button
+
+
+# Sex Selection
+labels = ['Male', 'Female']
+button = RadioButtonGroup(labels=labels, active=0)
+widgets['sex'] = button
+
+
+# Age
+start, end = eq_tup.Age_Range
+button = Slider(start=start, end=end, value=start, step=1, title="Age")
+widgets['age'] = button
+
+
+# Bodyfat
+start, end = cunningham_T.Bodyfat_Range
+button = Slider(start=start,end=end,value=start, step=1,title="% Bodyfat")
+widgets['bodyfat'] = button
+
+
+# Height
+start, end = eq_tup.Height_Range
+
+if get_widget_value('units') is 'Imperial':
+    start = cm_to_inches(start)
+    end = cm_to_inches(end)
+    title = "Height (inches)"
+else:
+    title = "Height (cm)"
+
+value = round((start + end)/2)
+button = Slider(start=start, end=end, value=value, step=1, title=title)
+widgets['height'] = button
+
+
+# Weight
+# Would prefer to limit this based on BMI
+start, end = eq_tup.Weight_Range
+
+if get_widget_value('units') is 'Imperial':
+    start = kg_to_lb(start)
+    end = kg_to_lb(end)
+    title = "Weight (lb)"
+else:
+    title = "Weight (kg)"
+
+value = (start + end)/2
+button = Slider(start=start, end=end, value=value, step=1, title=title)
+widgets['weight'] = button
+
+
+# -----------------------------------------------------
+# Initial call
 create_figure()
-# # Layout / Output
-
-# layout = row(controls, create_figure())
-# curdoc().add_root(layout)
-
-
