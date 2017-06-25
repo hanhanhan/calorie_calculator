@@ -1,6 +1,8 @@
  # Metabolic Equations for Resting Metabolic Rate
 from collections import namedtuple
 
+# Metabolic Equations
+
 def mifflin(weight=None, height=None, age=None, sex=None):
     """Basal metabolic rate in calories
     based on weight in kg, height in cm, and
@@ -59,9 +61,7 @@ def schofield(age=None, weight=None, sex=None):
         if age >= 3 and age < 10:
             return 95 * weight + 2110
 
-
-met_eq_functions = [mifflin, harris_benedict, cunningham, schofield]
-sex_values = ['Male', 'Female']
+# Tuples with Associated Data
 
 T = namedtuple('equation_tuple',['Name', 'Equation', 'Standard_Error', 
     'Parameters', 'Description', 'References', 'Age_Range', 'Weight_Range', 
@@ -124,3 +124,23 @@ schofield_T = T(
     )
 
 # also include error, age range, weight range?, height range? in tuple?
+
+met_eq_functions = ['mifflin', 'harris_benedict', 'cunningham', 'schofield']
+met_eq_tuples = [mifflin_T, harris_benedict_T, cunningham_T, schofield_T]
+labels = [eq.Name for eq in met_eq_tuples:]
+eq_tup_D = dict(zip(met_eq_functions, met_eq_tuples))
+sex_values = ['Male', 'Female']
+
+# -----------------------------------------------------------------------------
+
+def cm_to_inches(cm):
+    return 0.3937 * cm
+
+def kg_to_lb(kg):
+    return 2.20462 * kg
+
+def bmi(weight, height):
+    return weight / (0.01 * 0.01 * height * height)
+
+def underweight(bmi):
+    return bmi < 19
