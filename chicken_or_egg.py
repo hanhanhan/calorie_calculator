@@ -40,7 +40,7 @@ def get_shown_widgets():
     """
     parameters = get_eq_parameters()
     already_selected = get_widget_value(widgets['xaxis'])
-    options = [o for o in parameters if o is not already_selected]
+    options = [widget[o] for o in parameters if o is not already_selected]
 
     shown_widgets = widgets['equation'] + widgets['xaxis'] + options
     
@@ -49,6 +49,22 @@ def get_shown_widgets():
 def setup_equation():
     """ 
     """
+    # Selected equation
+    equation_name = get_widget_value('equation')
+
+    # Look up equation info tuple based on equation name
+    eq_T = eq_tup_D[equation_name]
+    equation = eq_T.Equation 
+
+    parameters = get_eq_parameters()
+    already_selected = get_widget_value('xaxis')
+
+    keywords = [k for k in parameters if k is not 'xaxis']
+    values = [get_widget_value(v) for v in parameters if v is not already_selected]
+    
+    arguments = dict(zip(keywords, values))
+
+    return partial(equation, arguments)
 
 # -----------------------------------------------------------------------------
 # Initialize Widgets
@@ -148,13 +164,14 @@ def create_figure():
     controls = widgetbox(shown_widgets, width=200)
 
     # Set up equation, x and y values based on UI values
-    met_eq_partial = 
-
-    y = [met_eq_partial(x_i) for x_i in x]
+    eq_partial = setup_equation()
+    x_start, x_stop = widgets['xaxis'].start, widgets['xaxis'].stop
+    x = list(range(x_start,x_stop))
+    y = [eq_partial(x_i) for x_i in x]
 
     p.line(x, y, line_width=2)
     # improve to version from equation_tuple.title
-    p.xaxis.axis_label = x_parameter
+    p.xaxis.axis_label = "Placeholder"
     p.yaxis.axis_label = "Calories per Day RMR"
     p.title = "this should be a long title"
     # Determine units

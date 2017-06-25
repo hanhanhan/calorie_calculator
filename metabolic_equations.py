@@ -127,7 +127,7 @@ schofield_T = T(
 
 met_eq_functions = ['mifflin', 'harris_benedict', 'cunningham', 'schofield']
 met_eq_tuples = [mifflin_T, harris_benedict_T, cunningham_T, schofield_T]
-labels = [eq.Name for eq in met_eq_tuples:]
+labels = [eq.Name for eq in met_eq_tuples]
 eq_tup_D = dict(zip(met_eq_functions, met_eq_tuples))
 sex_values = ['Male', 'Female']
 
