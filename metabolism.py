@@ -117,7 +117,8 @@ def get_xy_data(eq_partial):
     x_start, x_stop = lookup_range()
     x = list(range(x_start,x_stop))
     y = [round(eq_partial(x_i)) for x_i in x]
-    return [x,y]
+    # return [x,y]
+    return {'x': x, 'y': y}
 
 # -----------------------------------------------------------------------------
 
@@ -165,8 +166,8 @@ def update_data(attr, old, new):
     x_start, x_stop = lookup_range()
     x = list(range(x_start,x_stop))
     y = [round(eq_partial(x_i)) for x_i in x]
-    source.data['x'], source.data['y'] = get_xy_data(eq_partial)
-
+    # source.data['x'], source.data['y'] = get_xy_data(eq_partial)
+    source.data = get_xy_data(eq_partial)
 
 def update_plot(attr, old, new):
 
