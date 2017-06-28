@@ -1,13 +1,18 @@
  # Metabolic Equations for Resting Metabolic Rate
 from collections import namedtuple
+from inspect import getargspec
 
 # Metabolic Equations
 
-def mifflin(weight=None, height=None, age=None, sex=None):
+def mifflin(weight=None, height=None, age=None, sex=None, units=None):
     """Basal metabolic rate in calories
     based on weight in kg, height in cm, and
     sex (male = 1, female = 0)
     """
+    if units is 'Imperial':
+        height = height * 2.54 # inches to cm
+        weight = weight * 0.453592 # lbs to kg
+
     if sex is 'Male':
         sex = 1
     else:
@@ -16,116 +21,130 @@ def mifflin(weight=None, height=None, age=None, sex=None):
     return 9.99 * weight + 6.25 * height - 4.92 * age + 166 * sex - 161
 
 
-def harris_benedict(weight=None, height=None, age=None, sex=None):
+def harris_benedict(weight=None, height=None, age=None, sex=None, units=None):
     """Resting metabolic rate in calories
     based on weight in kg, height in cm, and
     sex.
     """
+    if units is 'Imperial':
+        height = height * 2.54 # inches to cm
+        weight = weight * 0.453592 # lbs to kg
+
     if sex is 'Male':
         return 66.5 + 13.75 * weight + 5.003 * height - 6.755 * age
     else: 
         return 655.1 + 9.563 * weight + 1.850 * height - 4.676 * age
 
 
-def cunningham(weight=None, bf=None):
+def cunningham(weight=None, bf=None, units=None):
     """Resting metabolic rate in calories
     based on weight in kg and percent body fat
     """
+
+    if units is 'Imperial':
+        weight = weight * 0.453592 # lbs to kg
+
     return (weight - weight * bf * 0.01) * 21.6 + 500
 
 
-def schofield(age=None, weight=None, sex=None):
+def schofield(age=None, weight=None, sex=None, units=None):
     """Resting metabolic rate based on on weight in kg, age, and
     sex (male = 1, female = 0)
     """
-    # ugh update from kilojoules
+
+    if units is 'Imperial':
+        weight = weight * 0.453592 # lbs to kg
 
     # Females
     if sex is 'Female':
         if age >= 60:
-            return 38 * weight + 2755
+            return 9.082 * weight + 658.5
         if age >= 30 and age < 60:
-            return 34 * weight + 3538
+            return 8.126 * weight + 845.6
         if age >= 18 and age < 30:
-            return 62 * weight + 2036
+            return 14.818 * weight + 486.6
         if age >= 10 and age < 18:
-            return 244 * weight - 130
+            return 13.384 * weight + 692.6
         if age >= 3 and age < 10:
-            85 * weight + 2033
+            return 20.315 * weight + 485.9
+
 
     # Males
     else: 
         if age >= 60:
-            return 49 * weight + 2459
+            return 11.711 * weight + 587.7
         if age >= 30 and age < 60:
-            return 48 * weight + 3653
+            return 11.472 * weight + 873.1
         if age >= 18 and age < 30:
-            return 63 * weight + 2896
+            return 15.057 * weight + 692.2
         if age >= 10 and age < 18:
-            return 74 * weight + 2754
+            return 17.686 * weight + 658.2
         if age >= 3 and age < 10:
-            return 95 * weight + 2110
+            return 22.706 * weight + 504.3
 
-# Tuples with Associated Data
+# Tuples with Associated Data 
 
-T = namedtuple('equation_tuple',['Name', 'Equation', 'Standard_Error', 
-    'Parameters', 'Description', 'References', 'Age_Range', 'Weight_Range', 
-    'Height_Range', 'Bodyfat_Range'])
+# better to put as separate variable? or use _fields protected method?
+tuple_fields = ['name', 'equation', 'standard_error', 
+    'parameters', 'description', 'references', 'age_range', 'weight_range', 
+    'height_range', 'bodyfat_range']
+
+T = namedtuple('equation_tuple', tuple_fields)
 
 # not sure if this works w/ multiple lines
 # T = namedtuple('equation_tuple','Name Equation Standard_Error Parameters Description', 
 #     'References Age_Range Weight_Range Height_Range')
 
 mifflin_T = T(
-    Name = "Mifflin",
-    Equation = mifflin,
-    Standard_Error = (0.1),
-    Parameters = ['weight', 'age', 'height', 'sex'],
-    Description = None,
-    References= None,
-    Age_Range = (18,80),
-    Weight_Range = (30, 200),
-    Height_Range = (122,272),
-    Bodyfat_Range = None
+    name = "Mifflin",
+    equation = mifflin,
+    standard_error = (0.1),
+    parameters = inspect.getargspec(mifflin).arg,
+    description = None,
+    references = None,
+    age_range = (18,80),
+    weight_range = (30, 200),
+    height_range = (122,272),
+    bodyfat_range = None
     )
 
 harris_benedict_T = T(
-    Name = "Harris Benedict",
-    Equation = harris_benedict,
-    Standard_Error = (0.1),
-    Parameters = ['weight', 'age', 'height', 'sex'],
-    Description = None,
-    References = None,
-    Age_Range = (18,80),
-    Weight_Range = None,
-    Height_Range = (122,272),
-    Bodyfat_Range = None
+    name = "Harris Benedict",
+    equation = harris_benedict,
+    standard_error = (0.1),
+    parameters = ['weight', 'age', 'height', 'sex', 'units'],
+    description = None,
+    references = None,
+    age_range = (18,80),
+    weight_range = None,
+    height_range = (122,272),
+    bodyfat_range = None
     ) 
 
 cunningham_T = T(
-    Name = "Cunningham",
-    Equation = cunningham,
-    Standard_Error = (0.1),
-    Parameters = ['weight', 'bodyfat'],
-    Description = 'For bodybuilders with low percent bodyfat.',
-    References= None,
-    Age_Range = (18,80),
-    Weight_Range = None,
-    Height_Range = (122,272),
-    Bodyfat_Range = (4,25)
+    name = "Cunningham",
+    equation = cunningham,
+    standard_error = (0.1),
+    parameters = ['weight', 'bodyfat', 'units'],
+    description = 'For bodybuilders with low percent bodyfat.',
+    references= None,
+    age_range = (18,80),
+    weight_range = None,
+    height_range = (122,272),
+    bodyfat_range = (4,25)
     )
 
 schofield_T = T(
-    Name = "Schofield",
-    Equation = schofield,
-    Standard_Error = (0.1),
-    Parameters = ['weight', 'age'],
-    Description = 'WHO',
-    References = None,
-    Age_Range = (3,80),
-    Weight_Range = None,
-    Height_Range = (122,272),
-    Bodyfat_Range = None
+    name = "Schofield",
+    equation = schofield,
+    standard_error = (0.1),
+    parameters = ['weight', 'age', 'units'],
+    description = 'WHO',
+    references = None,
+    age_range = (3,80),
+    weight_range = (30, 330),
+    height_range = (122,272),
+    bodyfat_range = None
     )
 
 # also include error, age range, weight range?, height range? in tuple?
@@ -133,8 +152,8 @@ schofield_T = T(
 # met_eq_functions = ['mifflin', 'harris_benedict', 'cunningham', 'schofield']
 
 met_eq_tuples = [mifflin_T, harris_benedict_T, cunningham_T, schofield_T]
-met_eq_functions = [eq.Name for eq in met_eq_tuples]
-labels = [eq.Name for eq in met_eq_tuples]
+met_eq_functions = [eq.name for eq in met_eq_tuples]
+labels = [eq.name for eq in met_eq_tuples]
 eq_tup_D = dict(zip(met_eq_functions, met_eq_tuples))
 
 

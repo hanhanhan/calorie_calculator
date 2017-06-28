@@ -53,7 +53,7 @@ def get_eq_parameters():
     """
     equation = get_widget_value('equation')
     eq_tup = eq_tup_D[equation]
-    return eq_tup.Parameters
+    return eq_tup.parameters
 
 
 def get_shown_widgets():
@@ -70,6 +70,13 @@ def get_shown_widgets():
     shown_widgets += options
     
     return shown_widgets
+
+def update_widget(shown_widget):
+
+    
+
+    
+
 
 def get_partial_parameters():
     parameters = get_eq_parameters()
@@ -90,7 +97,7 @@ def setup_equation():
     """ Setup partial equation for chosen x axis.
     """
     eq_T = get_eq_tup()
-    equation = eq_T.Equation 
+    equation = eq_T.equation 
 
     parameters = get_eq_parameters()
     already_selected = get_widget_value('xaxis')
@@ -104,20 +111,32 @@ def setup_equation():
     return partial_eq
 
 
-def lookup_range():
+def lookup_range(parameter=None):
     """ Return the equation's validated range (min, max) 
-    for the x-axis parameter chosen.
+    for the parameter chosen.
     """
+    if parameter is None:
+        parameter = get_widget_value('xaxis')
+     
+    for field in tuple_fields:
+        if parameter in field and 'range' in field:
+            i = tuple_fields.index(field)
+            eq_T = get_eq_tup()
+            return eq_T[i]
 
-    # Placeholder. Consider units.
+    print('not found')
 
-    return (30,300)
 
 def get_xy_data(eq_partial):
     x_start, x_stop = lookup_range()
     x = list(range(x_start,x_stop))
-    y = [round(eq_partial(x_i)) for x_i in x]
-    # return [x,y]
+
+    eq_partial = setup_equation()
+
+    xaxis = get_widget_value('xaxis')
+
+    args_list = [{xaxis: x_i} for x_i in x]
+    y = [eq_partial(**d) for d in args_list]
     return {'x': x, 'y': y}
 
 # -----------------------------------------------------------------------------
@@ -127,17 +146,24 @@ def create_figure():
 
     # UI Widgets
     shown_widgets = get_shown_widgets()
+
+    for widget in shown_widgets:
+        update_widget(shown_widgets)
+    
     controls = widgetbox(shown_widgets, width=200)
 
     xaxis = get_widget_value('xaxis')
+
     units_system = get_widget_value('units_system')
     units = get_units(xaxis)
 
     # update_data() ? this part is all the same but i'm not sure what to do about arguments
     eq_partial = setup_equation()
+
     eq_T = get_eq_tup()
 
-    source.data['x'], source.data['y'] = get_xy_data(eq_partial)
+    source.data = get_xy_data(eq_partial)
+
 
     # Bokeh Plot
     hover = HoverTool(tooltips = [('Weight','$x{0}'), 
@@ -166,11 +192,11 @@ def update_data(attr, old, new):
     x_start, x_stop = lookup_range()
     x = list(range(x_start,x_stop))
     y = [round(eq_partial(x_i)) for x_i in x]
-    # source.data['x'], source.data['y'] = get_xy_data(eq_partial)
     source.data = get_xy_data(eq_partial)
 
-def update_plot(attr, old, new):
 
+def update_plot(attr, old, new):
+    # update widgets including xaxis default value, ranges
     update_layout = create_figure()
     curdoc().clear()
     curdoc().add_root(update_layout)
@@ -186,7 +212,7 @@ widgets = {}
 
 
 # Equation Selection
-labels = [eq.Name for eq in met_eq_tuples]
+labels = [eq.name for eq in met_eq_tuples]
 button = RadioButtonGroup(labels=labels, active=0)
 button.on_change('active', update_plot)
 widgets['equation'] = button
@@ -217,19 +243,19 @@ widgets['sex'] = button
 
 
 # Age
-start, end = eq_tup.Age_Range
+start, end = eq_tup.age_range
 button = Slider(start=start, end=end, value=start, step=1, title="Age")
 widgets['age'] = button
 
 
 # Bodyfat
-start, end = cunningham_T.Bodyfat_Range
+start, end = cunningham_T.bodyfat_range
 button = Slider(start=start,end=end,value=start, step=1,title="% Bodyfat")
 widgets['bodyfat'] = button
 
 
 # Height
-start, end = eq_tup.Height_Range
+start, end = eq_tup.height_range
 
 if get_widget_value('units_system') is 'Imperial':
     start = cm_to_inches(start)
@@ -245,7 +271,7 @@ widgets['height'] = button
 
 # Weight
 # Would prefer to limit this based on BMI
-start, end = eq_tup.Weight_Range
+start, end = eq_tup.weight_range
 
 if get_widget_value('units_system') is 'Imperial':
     start = kg_to_lb(start)
