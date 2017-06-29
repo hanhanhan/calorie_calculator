@@ -1,5 +1,5 @@
 from functools import partial
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 
 from bokeh.layouts import widgetbox, row, column
 from bokeh.plotting import figure, curdoc
@@ -19,7 +19,9 @@ from metabolic_equations import *
 # 3. 
 
 # -----------------------------------------------------------------------------
-#
+# UI Widgets
+
+
 def get_widget_value(widget):
     """Return the named value from a widget button or toggle widget.
     """
@@ -62,20 +64,40 @@ def get_shown_widgets():
     """
     parameters = get_eq_parameters()
     already_selected = get_widget_value('xaxis')
-    options = [widgets[o] for o in parameters if o is not already_selected]
 
-    shown_widgets = []
-    shown_widgets.append(widgets['equation'])
-    shown_widgets.append(widgets['xaxis'])
-    shown_widgets += options
+    options = {k:widgets[k] for k in parameters if k is not already_selected}
+
+    shown_widgets = OrderedDict()
+    shown_widgets['equation'] = widgets['equation']
+    shown_widgets['xaxis'] = widgets['xaxis']
+    shown_widgets.update(options)
     
     return shown_widgets
 
-def update_widget(shown_widget):
+def update_widgets(shown_widgets):
 
-    
+    # update range of sliders based on range of validity for equation
+    for widget in shown_widgets:
 
-    
+        if widget in ['age', 'weight', 'height', 'bodyfat']:
+
+            start, end = lookup_range(widget)
+
+            conversion = {'lbs': kg_to_lb, 'inches': cm_to_inches}
+
+            if (get_widget_value('units_system') is 'Imperial' 
+            and get_units(widget) in ['lbs', 'kg']):
+
+                units = get_units(widget)
+
+                eq = conversion[units]
+                start = eq(start)
+                end = eq(end)
+
+            shown_widgets[widget].start = start
+            shown_widgets[widget].end = end
+            # I would prefer to make this sticky, with units conversion
+            shown_widgets[widget].end = round((start + end)/2)
 
 
 def get_partial_parameters():
@@ -139,6 +161,14 @@ def get_xy_data(eq_partial):
     y = [eq_partial(**d) for d in args_list]
     return {'x': x, 'y': y}
 
+def get_title_specifics():
+     # Using the _ equation - equation Mifflin None 
+     # No - xaxis weight None 
+     # at height _ (in) height 78 inches 
+     # at _ years - age 18 None 
+     # for a _ - sex Male None 
+     pass
+
 # -----------------------------------------------------------------------------
 
 
@@ -147,10 +177,10 @@ def create_figure():
     # UI Widgets
     shown_widgets = get_shown_widgets()
 
-    for widget in shown_widgets:
-        update_widget(shown_widgets)
+    # update ranges displayed and units
+    update_widgets(shown_widgets)
     
-    controls = widgetbox(shown_widgets, width=200)
+    controls = widgetbox(list(shown_widgets.values()), width=200)
 
     xaxis = get_widget_value('xaxis')
 
@@ -176,7 +206,13 @@ def create_figure():
     # improve to version from equation_tuple.title
     p.xaxis.axis_label = "{} ({})".format(xaxis.capitalize(), units)
     p.yaxis.axis_label = "Calories per Day RMR"
-    p.title.text = "this should be a long title"
+
+    title_specifics = ""
+    for parameter in shown_widgets:
+        print('\n\n', parameter, get_widget_value(parameter), get_units(parameter), '\n')
+        # title_specifics += get_widget_value(parameter) + " ("+ get_units(parameter) + ") "
+
+    p.title.text = "RMR vs {} at ".format(xaxis.capitalize(), title_specifics)
 
     update_layout = row(controls, p)
     # show(p)
@@ -231,7 +267,7 @@ widgets['units_system'] = button
 # Selection is based on equation selected.
 parameters = get_eq_parameters()
 
-labels = [o for o in parameters if o is not 'sex']
+labels = [o for o in parameters if o is not 'sex' and o is not 'units_system']
 button = RadioButtonGroup(labels=labels, active=0)
 widgets['xaxis'] = button
 

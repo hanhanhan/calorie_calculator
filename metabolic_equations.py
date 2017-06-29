@@ -4,12 +4,12 @@ from inspect import getargspec
 
 # Metabolic Equations
 
-def mifflin(weight=None, height=None, age=None, sex=None, units=None):
+def mifflin(weight=None, height=None, age=None, sex=None, units_system=None):
     """Basal metabolic rate in calories
     based on weight in kg, height in cm, and
     sex (male = 1, female = 0)
     """
-    if units is 'Imperial':
+    if units_system is 'Imperial':
         height = height * 2.54 # inches to cm
         weight = weight * 0.453592 # lbs to kg
 
@@ -21,7 +21,7 @@ def mifflin(weight=None, height=None, age=None, sex=None, units=None):
     return 9.99 * weight + 6.25 * height - 4.92 * age + 166 * sex - 161
 
 
-def harris_benedict(weight=None, height=None, age=None, sex=None, units=None):
+def harris_benedict(weight=None, height=None, age=None, sex=None, units_system=None):
     """Resting metabolic rate in calories
     based on weight in kg, height in cm, and
     sex.
@@ -36,7 +36,7 @@ def harris_benedict(weight=None, height=None, age=None, sex=None, units=None):
         return 655.1 + 9.563 * weight + 1.850 * height - 4.676 * age
 
 
-def cunningham(weight=None, bf=None, units=None):
+def cunningham(weight=None, bf=None, units_system=None):
     """Resting metabolic rate in calories
     based on weight in kg and percent body fat
     """
@@ -47,7 +47,7 @@ def cunningham(weight=None, bf=None, units=None):
     return (weight - weight * bf * 0.01) * 21.6 + 500
 
 
-def schofield(age=None, weight=None, sex=None, units=None):
+def schofield(age=None, weight=None, sex=None, units_system=None):
     """Resting metabolic rate based on on weight in kg, age, and
     sex (male = 1, female = 0)
     """
@@ -99,7 +99,7 @@ mifflin_T = T(
     name = "Mifflin",
     equation = mifflin,
     standard_error = (0.1),
-    parameters = inspect.getargspec(mifflin).arg,
+    parameters = getargspec(mifflin).args,
     description = None,
     references = None,
     age_range = (18,80),
@@ -112,7 +112,7 @@ harris_benedict_T = T(
     name = "Harris Benedict",
     equation = harris_benedict,
     standard_error = (0.1),
-    parameters = ['weight', 'age', 'height', 'sex', 'units'],
+    parameters = ['weight', 'age', 'height', 'sex', 'units_system'],
     description = None,
     references = None,
     age_range = (18,80),
@@ -125,7 +125,7 @@ cunningham_T = T(
     name = "Cunningham",
     equation = cunningham,
     standard_error = (0.1),
-    parameters = ['weight', 'bodyfat', 'units'],
+    parameters = ['weight', 'bodyfat', 'units_system'],
     description = 'For bodybuilders with low percent bodyfat.',
     references= None,
     age_range = (18,80),
@@ -138,7 +138,7 @@ schofield_T = T(
     name = "Schofield",
     equation = schofield,
     standard_error = (0.1),
-    parameters = ['weight', 'age', 'units'],
+    parameters = ['weight', 'age', 'units_system'],
     description = 'WHO',
     references = None,
     age_range = (3,80),
