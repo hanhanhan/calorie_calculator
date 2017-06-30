@@ -99,7 +99,8 @@ mifflin_T = T(
     name = "Mifflin St Jeor",
     equation = mifflin,
     standard_error = (0.1),
-    parameters = getargspec(mifflin).args,
+    # parameters = getargspec(mifflin).args, # better way ?
+    parameters = ['weight', 'age', 'height', 'sex', 'units_system'],
     description = None,
     references = None,
     age_range = (18,80),
@@ -128,9 +129,9 @@ cunningham_T = T(
     parameters = ['weight', 'bodyfat', 'units_system'],
     description = 'For bodybuilders with low percent bodyfat.',
     references= None,
-    age_range = (18,80),
+    age_range = None,
     weight_range = (30,200),
-    height_range = (122,272),
+    height_range = None,
     bodyfat_range = (4,25)
     )
 
@@ -143,7 +144,7 @@ schofield_T = T(
     references = None,
     age_range = (3,80),
     weight_range = (30, 330),
-    height_range = (122,272),
+    height_range = None,
     bodyfat_range = None
     )
 

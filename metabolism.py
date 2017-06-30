@@ -83,7 +83,11 @@ def get_shown_widgets():
     parameters = get_eq_parameters()
     # Here! xaxis may not be in new parameter set
     already_selected = get_widget_value('xaxis')
-    options = {k: widgets[k] for k in parameters if k is not already_selected}
+    
+    options = OrderedDict()
+    for k in parameters:
+        if k is not already_selected:
+            options[k] = widgets[k]
 
     shown_widgets = OrderedDict()
     shown_widgets['equation'] = widgets['equation']
@@ -222,9 +226,16 @@ def create_figure():
 
     # UI Widgets
 
-    # Update xaxis if new equation does not it as parameter
-    if get_widget_value('xaxis') not in get_eq_parameters():
-        widgets['xaxis'].value = 0
+    # If equation is updated (separate out to only equation button related callback)?:
+    # Update xaxis labels if needed due to equation selection change
+
+    
+    # if xaxis not in parameters:
+    #     widgets['xaxis'].active = 0
+ 
+    labels = get_xaxis_labels()
+    if widgets['xaxis'].labels != labels:
+        widgets['xaxis'].labels = labels
 
     shown_widgets = get_shown_widgets()
     
@@ -237,7 +248,7 @@ def create_figure():
     controls = widgetbox(list(shown_widgets.values()), width=200)
 
     xaxis = get_widget_value('xaxis')
-
+    # parameters = get_eq_parameters()
     units_system = get_widget_value('units_system')
     units = get_units(xaxis)
 
@@ -316,9 +327,13 @@ widgets['units_system'] = button
 
 # X-Axis Selection
 # Selection is based on equation selected.
-parameters = get_eq_parameters()
 
-labels = [o for o in parameters if o is not 'sex' and o is not 'units_system']
+def get_xaxis_labels():
+    parameters = get_eq_parameters() 
+    labels = [o for o in parameters if o is not 'sex' and o is not 'units_system']
+    return labels
+
+labels = get_xaxis_labels()
 button = RadioButtonGroup(labels=labels, active=0)
 widgets['xaxis'] = button
 
