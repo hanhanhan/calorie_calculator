@@ -26,7 +26,7 @@ def harris_benedict(weight=None, height=None, age=None, sex=None, units_system=N
     based on weight in kg, height in cm, and
     sex.
     """
-    if units is 'Imperial':
+    if units_system is 'Imperial':
         height = height * 2.54 # inches to cm
         weight = weight * 0.453592 # lbs to kg
 
@@ -36,15 +36,15 @@ def harris_benedict(weight=None, height=None, age=None, sex=None, units_system=N
         return 655.1 + 9.563 * weight + 1.850 * height - 4.676 * age
 
 
-def cunningham(weight=None, bf=None, units_system=None):
+def cunningham(weight=None, bodyfat=None, units_system=None):
     """Resting metabolic rate in calories
     based on weight in kg and percent body fat
     """
 
-    if units is 'Imperial':
+    if units_system is 'Imperial':
         weight = weight * 0.453592 # lbs to kg
 
-    return (weight - weight * bf * 0.01) * 21.6 + 500
+    return (weight - weight * bodyfat * 0.01) * 21.6 + 500
 
 
 def schofield(age=None, weight=None, sex=None, units_system=None):
@@ -52,7 +52,7 @@ def schofield(age=None, weight=None, sex=None, units_system=None):
     sex (male = 1, female = 0)
     """
 
-    if units is 'Imperial':
+    if units_system is 'Imperial':
         weight = weight * 0.453592 # lbs to kg
 
     # Females
@@ -96,7 +96,7 @@ T = namedtuple('equation_tuple', tuple_fields)
 #     'References Age_Range Weight_Range Height_Range')
 
 mifflin_T = T(
-    name = "Mifflin",
+    name = "Mifflin St Jeor",
     equation = mifflin,
     standard_error = (0.1),
     parameters = getargspec(mifflin).args,
@@ -116,7 +116,7 @@ harris_benedict_T = T(
     description = None,
     references = None,
     age_range = (18,80),
-    weight_range = None,
+    weight_range = (30,200),
     height_range = (122,272),
     bodyfat_range = None
     ) 
@@ -129,7 +129,7 @@ cunningham_T = T(
     description = 'For bodybuilders with low percent bodyfat.',
     references= None,
     age_range = (18,80),
-    weight_range = None,
+    weight_range = (30,200),
     height_range = (122,272),
     bodyfat_range = (4,25)
     )

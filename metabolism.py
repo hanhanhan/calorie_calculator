@@ -109,6 +109,7 @@ def get_partial_parameters():
 
 def get_eq_tup():
     # Selected equation
+
     equation_name = get_widget_value('equation')
 
     # Look up equation info tuple based on equation name
@@ -135,11 +136,12 @@ def setup_equation():
 
 def lookup_range(parameter=None):
     """ Return the equation's validated range (min, max) 
-    for the parameter chosen.
+    for the parameter chosen. Default is for xaxis.
     """
     if parameter is None:
         parameter = get_widget_value('xaxis')
      
+    # lookup range of parameter from tuple by naming scheme
     for field in tuple_fields:
         if parameter in field and 'range' in field:
             i = tuple_fields.index(field)
@@ -150,7 +152,9 @@ def lookup_range(parameter=None):
 
 
 def get_xy_data(eq_partial):
+
     x_start, x_stop = lookup_range()
+
     x = list(range(x_start,x_stop))
 
     eq_partial = setup_equation()
@@ -162,12 +166,33 @@ def get_xy_data(eq_partial):
     return {'x': x, 'y': y}
 
 def get_title_specifics():
-     # Using the _ equation - equation Mifflin None 
-     # No - xaxis weight None 
-     # at height _ (in) height 78 inches 
-     # at _ years - age 18 None 
-     # for a _ - sex Male None 
-     pass
+    # Using the _ equation - equation Mifflin None 
+    # No - xaxis weight None 
+    # at height _ (in) height 78 inches 
+    # at _ years - age 18 None 
+    # for a _ - sex Male None 
+    # pass
+    parameters = get_eq_parameters()
+
+    info = 'using the {} equation '.format(get_eq_tup().name)
+
+    if 'sex' in parameters:
+        sex_info = 'for a {} '.format(get_widget_value('sex'))
+        info += sex_info
+
+    if 'height' in parameters and not get_widget_value('xaxis'):
+        height_info = 'at height {} {} '.format(get_widget_value('height'), get_units('height'))
+        info += height_info
+     
+    if 'weight' in parameters and not get_widget_value('xaxis'): 
+        weight_info = 'at weight {} {} '.format(get_widget_value('weight'), get_units('weight'))
+        info += weight_info 
+
+    if 'age' in parameters: 
+        age_info = 'at {} years '.format(get_widget_value('age'))
+        info += age_info
+    
+    return info
 
 # -----------------------------------------------------------------------------
 
@@ -207,12 +232,9 @@ def create_figure():
     p.xaxis.axis_label = "{} ({})".format(xaxis.capitalize(), units)
     p.yaxis.axis_label = "Calories per Day RMR"
 
-    title_specifics = ""
-    for parameter in shown_widgets:
-        print('\n\n', parameter, get_widget_value(parameter), get_units(parameter), '\n')
-        # title_specifics += get_widget_value(parameter) + " ("+ get_units(parameter) + ") "
+    title_specifics = get_title_specifics()
 
-    p.title.text = "RMR vs {} at ".format(xaxis.capitalize(), title_specifics)
+    p.title.text = "RMR vs {} {}".format(xaxis.capitalize(), title_specifics)
 
     update_layout = row(controls, p)
     # show(p)
