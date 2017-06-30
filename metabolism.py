@@ -35,6 +35,24 @@ def get_widget_value(widget):
         return w.value
 
 
+def set_widget_value(widget):
+    ''' Used to update ranges on button
+    '''    
+    # w = widgets[widget]
+
+    # if widget = 'xaxis':
+    # #  button has start, end, value
+    # button = RadioButtonGroup(labels=labels, active=0)
+    # widgets['xaxis'] = button
+    # if type(w) is RadioButtonGroup:
+    #     index = widgets[widget].active
+    #     return w.labels[index]
+
+    # if type(w) is Select or Slider:
+    #     return w.value
+    pass
+
+
 def get_units(parameter):
 
     if get_widget_value('units_system') is 'Metric':
@@ -63,9 +81,9 @@ def get_shown_widgets():
     selections.
     """
     parameters = get_eq_parameters()
+    # Here! xaxis may not be in new parameter set
     already_selected = get_widget_value('xaxis')
-
-    options = {k:widgets[k] for k in parameters if k is not already_selected}
+    options = {k: widgets[k] for k in parameters if k is not already_selected}
 
     shown_widgets = OrderedDict()
     shown_widgets['equation'] = widgets['equation']
@@ -73,6 +91,15 @@ def get_shown_widgets():
     shown_widgets.update(options)
     
     return shown_widgets
+
+
+def get_partial_parameters():
+    parameters = get_eq_parameters()
+    # Here!
+    already_selected = get_widget_value('xaxis')
+
+    return [k for k in parameters if k is not already_selected]
+
 
 def update_widgets(shown_widgets):
 
@@ -99,12 +126,6 @@ def update_widgets(shown_widgets):
             # I would prefer to make this sticky, with units conversion
             shown_widgets[widget].end = round((start + end)/2)
 
-
-def get_partial_parameters():
-    parameters = get_eq_parameters()
-    already_selected = get_widget_value('xaxis')
-
-    return [k for k in parameters if k is not already_selected]
 
 
 def get_eq_tup():
@@ -200,10 +221,18 @@ def get_title_specifics():
 def create_figure():
 
     # UI Widgets
-    shown_widgets = get_shown_widgets()
 
+    # Update xaxis if new equation does not it as parameter
+    if get_widget_value('xaxis') not in get_eq_parameters():
+        widgets['xaxis'].value = 0
+
+    shown_widgets = get_shown_widgets()
+    
     # update ranges displayed and units
     update_widgets(shown_widgets)
+
+    # get list of equation parameters
+    # check xaxis value is in equation parameters
     
     controls = widgetbox(list(shown_widgets.values()), width=200)
 
@@ -308,7 +337,7 @@ widgets['age'] = button
 
 # Bodyfat
 start, end = cunningham_T.bodyfat_range
-button = Slider(start=start,end=end,value=start, step=1,title="% Bodyfat")
+button = Slider(start=start,end=end,value=start, step=1, title="% Bodyfat")
 widgets['bodyfat'] = button
 
 
@@ -342,6 +371,7 @@ value = (start + end)/2
 button = Slider(start=start, end=end, value=value, step=1, title=title)
 widgets['weight'] = button
 
+# Widget Event Listeners
 for key in widgets:
 
     w = widgets[key]

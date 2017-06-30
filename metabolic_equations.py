@@ -2,7 +2,7 @@
 from collections import namedtuple
 from inspect import getargspec
 
-# Metabolic Equations
+# Metabolic Equations, Tuples with Meta Info, Constants
 
 def mifflin(weight=None, height=None, age=None, sex=None, units_system=None):
     """Basal metabolic rate in calories
