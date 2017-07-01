@@ -55,7 +55,7 @@ def set_widget_value(widget):
 
 def get_units(parameter):
 
-    if get_widget_value('units_system') is 'Metric':
+    if get_widget_value('units_system') == 'Metric':
         if parameter is 'weight':
             return 'kg'
         if parameter is 'height':
@@ -99,36 +99,89 @@ def get_shown_widgets():
 
 def get_partial_parameters():
     parameters = get_eq_parameters()
-    # Here!
     already_selected = get_widget_value('xaxis')
 
-    return [k for k in parameters if k is not already_selected]
+    return [k for k in parameters if k != already_selected]
 
 
-def update_widgets(shown_widgets):
+def update_widget_units(widgets):
+    """ Update range of sliders based on range of validity for equation
+    Update widget's range, value
+    !!! Reorganize to only call by units event listener
 
-    # update range of sliders based on range of validity for equation
-    for widget in shown_widgets:
+    """
+    global units_state
+    # state tracking of units
+    # needed? just check attr old != new?
+    units_system = get_widget_value('units_system')
+    units_state.append(units_system)
 
-        if widget in ['age', 'weight', 'height', 'bodyfat']:
+    # if unit haven't changed, skip rest
+    if units_state[-1] == units_state[-2]:
+        if len(units_state) > 1000:
+            units_state = units_state[998:]
+        return
 
-            start, end = lookup_range(widget)
+    # conversions to Imperial system
 
-            conversion = {'lbs': kg_to_lb, 'inches': cm_to_inches}
+    def convert_button_info(parameter):
 
-            if (get_widget_value('units_system') is 'Imperial' 
-            and get_units(widget) in ['lbs', 'kg']):
+        if lookup_range(parameter) is not None:
+            start, end = lookup_range(parameter)
+        else:
+            start = widgets[parameter].start
+            end = widgets[parameter].end
+        value = widgets[parameter].value
 
-                units = get_units(widget)
+        units = get_units(parameter)
+        convert = conversion_D[units]
+        
+        start = convert(start)
+        end = convert(end)
+        value = convert(value)
 
-                eq = conversion[units]
-                start = eq(start)
-                end = eq(end)
+    convert_button_info('height')
+    convert_button_info('weight')
+    
+    # if units_system == 'Imperial':
+    #     # there may not be a range for some equations
+    #     # if not, convert existing values (sticky values)
+    #     if lookup_range('weight') is not None:
+    #         start, end = lookup_range('weight')
+    #     else:
+    #         start = widgets['weight'].start
+    #         end = widgets['weight'].end
+    #     value = widgets['weight'].value
 
-            shown_widgets[widget].start = start
-            shown_widgets[widget].end = end
-            # I would prefer to make this sticky, with units conversion
-            shown_widgets[widget].end = round((start + end)/2)
+    #     start = kg_to_lbs(start)
+    #     end = kg_to_lbs(end)
+    #     value = kg_to_lbs(value)
+
+    #     if lookup_range('height') is not None:
+    #         start, end = lookup_range('height')
+    #     else 
+
+
+    # for widget in shown_widgets:
+
+    #     if widget in ['weight', 'height']:
+    #         # print('\n\n\n', widget, '\n\n\n', type(widget), '\n\n\n')
+    #         start, end = lookup_range(widget)
+    #         value = shown_widgets[widget]
+
+    #         if (get_widget_value('units_system') == 'Imperial' 
+    #         and get_units(widget) in ['lbs', 'kg']):
+
+    #             units = get_units(widget)
+
+    #             eq = conversion[units]
+    #             start = eq(start)
+    #             end = eq(end)
+
+    #         shown_widgets[widget].start = start
+    #         shown_widgets[widget].end = end
+    #         # I would prefer to make this sticky, with units conversion
+    #         shown_widgets[widget].end = round((start + end)/2)
 
 
 
@@ -226,33 +279,26 @@ def create_figure():
 
     # UI Widgets
 
-    # If equation is updated (separate out to only equation button related callback)?:
-    # Update xaxis labels if needed due to equation selection change
+    # This top section only needed if equation is updated 
+    # (separate out to only equation button related callback)?:
 
-    
-    # if xaxis not in parameters:
-    #     widgets['xaxis'].active = 0
- 
+    # Update parameters for xaxis selection if needed due to equation change
     labels = get_xaxis_labels()
     if widgets['xaxis'].labels != labels:
         widgets['xaxis'].labels = labels
 
     shown_widgets = get_shown_widgets()
+    print('\n\n', shown_widgets, '\n')
     
-    # update ranges displayed and units
-    update_widgets(shown_widgets)
-
-    # get list of equation parameters
-    # check xaxis value is in equation parameters
+    # Only needed if units widget is updated
+    update_widget_units(shown_widgets)
     
     controls = widgetbox(list(shown_widgets.values()), width=200)
 
     xaxis = get_widget_value('xaxis')
-    # parameters = get_eq_parameters()
     units_system = get_widget_value('units_system')
     units = get_units(xaxis)
 
-    # update_data() ? this part is all the same but i'm not sure what to do about arguments
     eq_partial = setup_equation()
 
     eq_T = get_eq_tup()
@@ -323,14 +369,15 @@ labels = ["Imperial", "Metric"]
 button = RadioButtonGroup(labels=labels, active=0)
 button.on_change('active', update_plot)
 widgets['units_system'] = button
-
+units_state = [get_widget_value('units_system')]
+print('\n\nhere!  ', units_state)
 
 # X-Axis Selection
 # Selection is based on equation selected.
 
 def get_xaxis_labels():
     parameters = get_eq_parameters() 
-    labels = [o for o in parameters if o is not 'sex' and o is not 'units_system']
+    labels = [o for o in parameters if o != 'sex' and o != 'units_system']
     return labels
 
 labels = get_xaxis_labels()
@@ -359,7 +406,7 @@ widgets['bodyfat'] = button
 # Height
 start, end = eq_tup.height_range
 
-if get_widget_value('units_system') is 'Imperial':
+if get_widget_value('units_system') == 'Imperial':
     start = cm_to_inches(start)
     end = cm_to_inches(end)
     title = "Height (inches)"
@@ -375,7 +422,7 @@ widgets['height'] = button
 # Would prefer to limit this based on BMI
 start, end = eq_tup.weight_range
 
-if get_widget_value('units_system') is 'Imperial':
+if get_widget_value('units_system') == 'Imperial':
     start = kg_to_lb(start)
     end = kg_to_lb(end)
     title = "Weight (lbs)"

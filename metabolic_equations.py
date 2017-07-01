@@ -168,6 +168,15 @@ def cm_to_inches(cm):
 def kg_to_lb(kg):
     return round(2.20462 * kg)
 
+def inches_to_cm(inches):
+    return round(2.54 * inches)
+
+def lb_to_kg(lb):
+    return round(0.453592 * lb)
+
+conversion_D = {'kg': lb_to_kg, 'lbs': kg_to_lb, 
+    'cm': inches_to_cm, 'inches': cm_to_inches}
+
 def bmi(weight, height):
     return round(weight / (0.01 * 0.01 * height * height))
 
