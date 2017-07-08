@@ -9,14 +9,6 @@ from bokeh.io import output_file, show
 
 from metabolic_equations import *
 
-# Things that should be linked:
-# parameter, widget, values (if by index)
-# eg sex, button_sex, ['male','female'] 
-
-
-# 1. set up all buttons, eq, x axis with default values
-# 2. update functions cascading eq -> units -> x-axis -> options
-# 3. 
 
 # -----------------------------------------------------------------------------
 # UI Widgets
@@ -61,7 +53,7 @@ def get_units(parameter):
         if parameter is 'height':
             return 'cm'
 
-    if get_widget_value('units_system') is 'Imperial':
+    if get_widget_value('units_system') == 'Imperial':
         if parameter is 'weight':
             return 'lbs'
         if parameter is 'height':
@@ -104,44 +96,36 @@ def get_partial_parameters():
     return [k for k in parameters if k != already_selected]
 
 
-def update_widget_units(widgets):
-    """ Update range of sliders based on range of validity for equation
-    Update widget's range, value
-    !!! Reorganize to only call by units event listener
+# def update_widget_units(widgets):
+#     """ Update range of sliders based on range of validity for equation
+#     Update widget's range, value
+#     !!! Reorganize to only call by units event listener
 
-    """
-    global units_state
-    # state tracking of units
-    # needed? just check attr old != new?
-    units_system = get_widget_value('units_system')
-    units_state.append(units_system)
-
-    # if unit haven't changed, skip rest
-    if units_state[-1] == units_state[-2]:
-        if len(units_state) > 1000:
-            units_state = units_state[998:]
-        return
+#     """
+    # units_system = get_widget_value('units_system')
 
     # conversions to Imperial system
 
-    def convert_button_info(parameter):
+def convert_button_info(parameter):
 
-        if lookup_range(parameter) is not None:
-            start, end = lookup_range(parameter)
-        else:
-            start = widgets[parameter].start
-            end = widgets[parameter].end
-        value = widgets[parameter].value
+    if lookup_range(parameter) is not None:
+        start, end = lookup_range(parameter)
+    else:
+        start = widgets[parameter].start
+        end = widgets[parameter].end
+    value = widgets[parameter].value
 
-        units = get_units(parameter)
-        convert = conversion_D[units]
-        
-        start = convert(start)
-        end = convert(end)
-        value = convert(value)
+    units = get_units(parameter)
+    convert = conversion_D[units] # get equation from starting units
+    
+    start = convert(start)
+    end = convert(end)
+    value = convert(value)
 
-    convert_button_info('height')
-    convert_button_info('weight')
+    widgets[parameter].start = start
+    widgets[parameter].end = end
+    widgets[parameter].value = value
+
     
     # if units_system == 'Imperial':
     #     # there may not be a range for some equations
@@ -162,26 +146,26 @@ def update_widget_units(widgets):
     #     else 
 
 
-    # for widget in shown_widgets:
+    for widget in shown_widgets:
 
-    #     if widget in ['weight', 'height']:
-    #         # print('\n\n\n', widget, '\n\n\n', type(widget), '\n\n\n')
-    #         start, end = lookup_range(widget)
-    #         value = shown_widgets[widget]
+        if widget in ['weight', 'height']:
+            # print('\n\n\n', widget, '\n\n\n', type(widget), '\n\n\n')
+            start, end = lookup_range(widget)
+            value = shown_widgets[widget]
 
-    #         if (get_widget_value('units_system') == 'Imperial' 
-    #         and get_units(widget) in ['lbs', 'kg']):
+            if (get_widget_value('units_system') == 'Imperial' 
+            and get_units(widget) in ['lbs', 'kg']):
 
-    #             units = get_units(widget)
+                units = get_units(widget)
 
-    #             eq = conversion[units]
-    #             start = eq(start)
-    #             end = eq(end)
+                eq = conversion[units]
+                start = eq(start)
+                end = eq(end)
 
-    #         shown_widgets[widget].start = start
-    #         shown_widgets[widget].end = end
-    #         # I would prefer to make this sticky, with units conversion
-    #         shown_widgets[widget].end = round((start + end)/2)
+            shown_widgets[widget].start = start
+            shown_widgets[widget].end = end
+            # I would prefer to make this sticky, with units conversion
+            shown_widgets[widget].end = round((start + end)/2)
 
 
 
@@ -233,7 +217,7 @@ def get_xy_data(eq_partial):
 
     x_start, x_stop = lookup_range()
 
-    x = list(range(x_start,x_stop))
+    x = list(range(x_start, x_stop))
 
     eq_partial = setup_equation()
 
@@ -242,6 +226,7 @@ def get_xy_data(eq_partial):
     args_list = [{xaxis: x_i} for x_i in x]
     y = [eq_partial(**d) for d in args_list]
     return {'x': x, 'y': y}
+
 
 def get_title_specifics():
     # Using the _ equation - equation Mifflin None 
@@ -288,10 +273,9 @@ def create_figure():
         widgets['xaxis'].labels = labels
 
     shown_widgets = get_shown_widgets()
-    print('\n\n', shown_widgets, '\n')
     
     # Only needed if units widget is updated
-    update_widget_units(shown_widgets)
+    # update_widget_units(shown_widgets)
     
     controls = widgetbox(list(shown_widgets.values()), width=200)
 
@@ -300,11 +284,10 @@ def create_figure():
     units = get_units(xaxis)
 
     eq_partial = setup_equation()
-
+    
     eq_T = get_eq_tup()
 
     source.data = get_xy_data(eq_partial)
-
 
     # Bokeh Plot
     hover = HoverTool(tooltips = [('Weight','$x{0}'), 
@@ -328,14 +311,8 @@ def create_figure():
 
 
 def update_data(attr, old, new):
-
     # Set up equation, x and y values based on UI values
     eq_partial = setup_equation()
-
-    # get from existing graph
-    x_start, x_stop = lookup_range()
-    x = list(range(x_start,x_stop))
-    y = [round(eq_partial(x_i)) for x_i in x]
     source.data = get_xy_data(eq_partial)
 
 
@@ -344,6 +321,15 @@ def update_plot(attr, old, new):
     update_layout = create_figure()
     curdoc().clear()
     curdoc().add_root(update_layout)
+
+
+def update_units(attr, old, new):
+    # example - attr: active, old: 0, new: 1
+    # will not be called with old == new values
+    convert_button_info('height')
+    convert_button_info('weight')
+
+    # update data, xaxis, title, 
 
 
 
@@ -367,10 +353,9 @@ eq_tup = eq_tup_D[labels[0]]
 # Units displayed for other widgets will be set based on this.
 labels = ["Imperial", "Metric"]
 button = RadioButtonGroup(labels=labels, active=0)
-button.on_change('active', update_plot)
+button.on_change('active', update_units)
 widgets['units_system'] = button
-units_state = [get_widget_value('units_system')]
-print('\n\nhere!  ', units_state)
+# attr: active, old: 0, new: 1
 
 # X-Axis Selection
 # Selection is based on equation selected.
@@ -441,7 +426,7 @@ for key in widgets:
     if type(w) is Slider:
         w.on_change('value', update_data)
     
-    if type(w) is RadioButtonGroup or type(w) is Select:
+    if w != 'units_system' and type(w) is RadioButtonGroup or type(w) is Select:
         w.on_change('active', update_plot)
 
 
