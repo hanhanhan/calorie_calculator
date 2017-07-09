@@ -5,7 +5,7 @@ from bokeh.layouts import widgetbox, row, column
 from bokeh.plotting import figure, curdoc
 from bokeh.models import Slider, Select, RadioButtonGroup, HoverTool
 from bokeh.models import ColumnDataSource
-from bokeh.io import output_file, show
+from bokeh.io import output_file, show, curstate, curdoc
 
 from metabolic_equations import *
 
@@ -66,9 +66,7 @@ def get_units(parameter):
         elif parameter is 'height':
             return 'cm'
         else:
-            print('get_units parameter not found Metric')
             return None
-
 
     elif get_widget_value('units_system') == 'Imperial':
         if parameter is 'weight':
@@ -76,7 +74,6 @@ def get_units(parameter):
         elif parameter is 'height':
             return 'inches' 
         else:
-            print('get_units parameter not found Imperial', parameter)
             return None
 
     # is there a better catchall?
@@ -85,7 +82,7 @@ def get_units(parameter):
     # explicit is better than implicit
 
     else:
-        print('get_units units not found')
+        print('no value for get_units')
         return None
 
 
@@ -157,48 +154,6 @@ def convert_button_info(parameter):
     widgets[parameter].start = start
     widgets[parameter].end = end
     widgets[parameter].value = value
-
-    
-    # if units_system == 'Imperial':
-    #     # there may not be a range for some equations
-    #     # if not, convert existing values (sticky values)
-    #     if lookup_range('weight') is not None:
-    #         start, end = lookup_range('weight')
-    #     else:
-    #         start = widgets['weight'].start
-    #         end = widgets['weight'].end
-    #     value = widgets['weight'].value
-
-    #     start = kg_to_lbs(start)
-    #     end = kg_to_lbs(end)
-    #     value = kg_to_lbs(value)
-
-    #     if lookup_range('height') is not None:
-    #         start, end = lookup_range('height')
-    #     else 
-
-
-    # for widget in shown_widgets:
-
-    #     if widget in ['weight', 'height']:
-    #         # print('\n\n\n', widget, '\n\n\n', type(widget), '\n\n\n')
-    #         start, end = lookup_range(widget)
-    #         value = shown_widgets[widget]
-
-    #         if (get_widget_value('units_system') == 'Imperial' 
-    #         and get_units(widget) in ['lbs', 'kg']):
-
-    #             units = get_units(widget)
-
-    #             eq = conversion[units]
-    #             start = eq(start)
-    #             end = eq(end)
-
-    #         shown_widgets[widget].start = start
-    #         shown_widgets[widget].end = end
-    #         # I would prefer to make this sticky, with units conversion
-    #         shown_widgets[widget].end = round((start + end)/2)
-
 
 
 def get_eq_tup():
@@ -351,16 +306,21 @@ def update_data(attr, old, new):
 
 def update_plot(attr, old, new):
     # update widgets including xaxis default value, ranges
+    
     update_layout = create_figure()
     curdoc().clear()
     curdoc().add_root(update_layout)
 
+# While inside an unlocked callback, 
+# it is completely unsafe to modify curdoc(). 
+# The value of curdoc() inside the callback will be a specially wrapped version of Document that only allows safe operations, which are:
+# Attempts to otherwise access or change the Document will result in an exception being raised.
 
-def update_units(attr, old, new):
-    # example - attr: active, old: 0, new: 1
-    # will not be called with old == new values
-    convert_button_info('height')
-    convert_button_info('weight')
+# def update_units(attr, old, new):
+#     # example - attr: active, old: 0, new: 1
+#     # will not be called with old == new values
+#     convert_button_info('height')
+#     convert_button_info('weight')
 
     # update_layout = create_figure()
     # curdoc().clear()
@@ -381,7 +341,6 @@ widgets = {}
 # Equation Selection
 labels = [eq.name for eq in met_eq_tuples]
 button = RadioButtonGroup(labels=labels, active=0)
-button.on_change('active', update_plot)
 widgets['equation'] = button
 eq_tup = eq_tup_D[labels[0]]
 
@@ -390,7 +349,7 @@ eq_tup = eq_tup_D[labels[0]]
 # Units displayed for other widgets will be set based on this.
 labels = ["Imperial", "Metric"]
 button = RadioButtonGroup(labels=labels, active=0)
-button.on_change('active', update_units)
+button.on_change('active', update_plot)
 widgets['units_system'] = button
 # attr: active, old: 0, new: 1
 
@@ -460,10 +419,10 @@ for key in widgets:
 
     w = widgets[key]
 
-    if type(w) is Slider:
+    if isinstance(w, Slider):
         w.on_change('value', update_data)
     
-    if w != 'units_system' and type(w) is RadioButtonGroup or type(w) is Select:
+    elif w != 'units_system':
         w.on_change('active', update_plot)
 
 
@@ -482,3 +441,4 @@ layout = create_figure()
 
 curdoc().add_root(layout)
 curdoc().title = "Resting Metabolism Rate"
+
