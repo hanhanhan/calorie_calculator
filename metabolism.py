@@ -15,15 +15,29 @@ from metabolic_equations import *
 
 
 def get_widget_value(widget):
-    """Return the named value from a widget button or toggle widget.
+    """Return the metric value from an analog widget, or the named value from a widget button.
     """
     w = widgets[widget]
 
-    if type(w) is RadioButtonGroup:
+    if isinstance(w, RadioButtonGroup):
         index = widgets[widget].active
         return w.labels[index]
 
-    if type(w) is Select or Slider:
+    elif isinstance(w, Select):
+        return w.value
+
+    elif isinstance(w, Slider) and get_widget_value('units_system') == 'Metric':
+        return w.value
+
+    # imperial units system conversion
+    # or return as pair? more explicit
+    elif get_units(widget) == 'inches':
+        return inches_to_cm(w.value)
+        
+    elif get_units(widget) == 'lbs':
+        return lb_to_kg(w.value)
+
+    else: #elif isinstance(w, Slider):
         return w.value
 
 
@@ -44,20 +58,35 @@ def set_widget_value(widget):
     #     return w.value
     pass
 
-
 def get_units(parameter):
 
     if get_widget_value('units_system') == 'Metric':
         if parameter is 'weight':
             return 'kg'
-        if parameter is 'height':
+        elif parameter is 'height':
             return 'cm'
+        else:
+            print('get_units parameter not found Metric')
+            return None
 
-    if get_widget_value('units_system') == 'Imperial':
+
+    elif get_widget_value('units_system') == 'Imperial':
         if parameter is 'weight':
             return 'lbs'
-        if parameter is 'height':
+        elif parameter is 'height':
             return 'inches' 
+        else:
+            print('get_units parameter not found Imperial', parameter)
+            return None
+
+    # is there a better catchall?
+    # I could just use if / else here -- but it makes me a bit nervous
+    # what if I modify categories?
+    # explicit is better than implicit
+
+    else:
+        print('get_units units not found')
+        return None
 
 
 def get_eq_parameters():
@@ -116,6 +145,9 @@ def convert_button_info(parameter):
     value = widgets[parameter].value
 
     units = get_units(parameter)
+    if not units:
+        print('\n line 149 units parameter', parameter)
+
     convert = conversion_D[units] # get equation from starting units
     
     start = convert(start)
@@ -146,26 +178,26 @@ def convert_button_info(parameter):
     #     else 
 
 
-    for widget in shown_widgets:
+    # for widget in shown_widgets:
 
-        if widget in ['weight', 'height']:
-            # print('\n\n\n', widget, '\n\n\n', type(widget), '\n\n\n')
-            start, end = lookup_range(widget)
-            value = shown_widgets[widget]
+    #     if widget in ['weight', 'height']:
+    #         # print('\n\n\n', widget, '\n\n\n', type(widget), '\n\n\n')
+    #         start, end = lookup_range(widget)
+    #         value = shown_widgets[widget]
 
-            if (get_widget_value('units_system') == 'Imperial' 
-            and get_units(widget) in ['lbs', 'kg']):
+    #         if (get_widget_value('units_system') == 'Imperial' 
+    #         and get_units(widget) in ['lbs', 'kg']):
 
-                units = get_units(widget)
+    #             units = get_units(widget)
 
-                eq = conversion[units]
-                start = eq(start)
-                end = eq(end)
+    #             eq = conversion[units]
+    #             start = eq(start)
+    #             end = eq(end)
 
-            shown_widgets[widget].start = start
-            shown_widgets[widget].end = end
-            # I would prefer to make this sticky, with units conversion
-            shown_widgets[widget].end = round((start + end)/2)
+    #         shown_widgets[widget].start = start
+    #         shown_widgets[widget].end = end
+    #         # I would prefer to make this sticky, with units conversion
+    #         shown_widgets[widget].end = round((start + end)/2)
 
 
 
@@ -243,6 +275,7 @@ def get_title_specifics():
         sex_info = 'for a {} '.format(get_widget_value('sex'))
         info += sex_info
 
+    # weight and height NOT CORRECT here due to metric being returned
     if 'height' in parameters and not get_widget_value('xaxis'):
         height_info = 'at height {} {} '.format(get_widget_value('height'), get_units('height'))
         info += height_info
@@ -328,6 +361,10 @@ def update_units(attr, old, new):
     # will not be called with old == new values
     convert_button_info('height')
     convert_button_info('weight')
+
+    # update_layout = create_figure()
+    # curdoc().clear()
+    # curdoc().add_root(update_layout)
 
     # update data, xaxis, title, 
 
