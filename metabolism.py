@@ -5,7 +5,7 @@ from bokeh.layouts import widgetbox, row, column
 from bokeh.plotting import figure, curdoc
 from bokeh.models import Slider, Select, RadioButtonGroup, HoverTool
 from bokeh.models import ColumnDataSource
-from bokeh.io import output_file, show, curstate, curdoc
+from bokeh.io import output_file, show, curstate, curdoc, save
 
 from metabolic_equations import *
 
@@ -37,7 +37,7 @@ def get_widget_value(widget):
     elif get_units(widget) == 'lbs':
         return lb_to_kg(w.value)
 
-    else: #elif isinstance(w, Slider):
+    else: 
         return w.value
 
 
@@ -57,6 +57,7 @@ def set_widget_value(widget):
     # if type(w) is Select or Slider:
     #     return w.value
     pass
+
 
 def get_units(parameter):
 
@@ -133,17 +134,13 @@ def get_partial_parameters():
     # conversions to Imperial system
 
 def convert_button_info(parameter):
+# convert height or weight
 
-    if lookup_range(parameter) is not None:
-        start, end = lookup_range(parameter)
-    else:
-        start = widgets[parameter].start
-        end = widgets[parameter].end
+    start = widgets[parameter].start
+    end = widgets[parameter].end
     value = widgets[parameter].value
 
     units = get_units(parameter)
-    if not units:
-        print('\n line 149 units parameter', parameter)
 
     convert = conversion_D[units] # get equation from starting units
     
@@ -154,6 +151,9 @@ def convert_button_info(parameter):
     widgets[parameter].start = start
     widgets[parameter].end = end
     widgets[parameter].value = value
+
+    title = '{} ({})'.format(parameter.capitalize(), units) 
+    widgets[parameter].title = title
 
 
 def get_eq_tup():
@@ -302,13 +302,13 @@ def update_data(attr, old, new):
     # Set up equation, x and y values based on UI values
     eq_partial = setup_equation()
     source.data = get_xy_data(eq_partial)
+    # pass
 
 
 def update_plot(attr, old, new):
     # update widgets including xaxis default value, ranges
-    
-    update_layout = create_figure()
     curdoc().clear()
+    update_layout = create_figure()
     curdoc().add_root(update_layout)
 
 # While inside an unlocked callback, 
@@ -316,15 +316,13 @@ def update_plot(attr, old, new):
 # The value of curdoc() inside the callback will be a specially wrapped version of Document that only allows safe operations, which are:
 # Attempts to otherwise access or change the Document will result in an exception being raised.
 
-# def update_units(attr, old, new):
-#     # example - attr: active, old: 0, new: 1
-#     # will not be called with old == new values
-#     convert_button_info('height')
-#     convert_button_info('weight')
+def update_units(attr, old, new):
+    convert_button_info('height')
+    convert_button_info('weight')
 
-    # update_layout = create_figure()
-    # curdoc().clear()
-    # curdoc().add_root(update_layout)
+    update_layout = create_figure()
+    curdoc().clear()
+    curdoc().add_root(update_layout)
 
     # update data, xaxis, title, 
 
@@ -349,7 +347,7 @@ eq_tup = eq_tup_D[labels[0]]
 # Units displayed for other widgets will be set based on this.
 labels = ["Imperial", "Metric"]
 button = RadioButtonGroup(labels=labels, active=0)
-button.on_change('active', update_plot)
+button.on_change('active', update_units)
 widgets['units_system'] = button
 # attr: active, old: 0, new: 1
 
@@ -438,7 +436,6 @@ source = ColumnDataSource({'x':[], 'y':[]})
 layout = create_figure()
 
 # globals - document, layout, glyph?, source,
-
 curdoc().add_root(layout)
 curdoc().title = "Resting Metabolism Rate"
 
